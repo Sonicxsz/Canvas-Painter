@@ -1,0 +1,59 @@
+.toolbar {
+    width: 60px;
+    display: flex;
+    flex-direction: column;
+    background-image: linear-gradient(to right top, #f6f0f4, #eddfed5b, #e0cfea, #cdc1e8, #b4b5e8a1, #a7b9eb, #9abceb, #8ebfea, #a0cee9, #b8dce98c, #d4e8ec, #f2f3f3bb);
+    align-items: center;
+    z-index: 999;
+    padding: 0 20px;
+    top: 50%;
+    position: absolute;
+    gap: 20px;
+    left: 10px;
+    border-radius: 1rem;
+    padding: 0.5rem;
+    transform: translateY(-50%);
+    box-shadow: rgb(38, 57, 77) 0px 20px 30px -10px;
+}
+
+.toolbar .btn {
+    width: 50px;
+    height: 50px;
+    outline: none;
+    cursor: pointer;
+    background-color: rgb(196, 195, 195);
+    border-radius: 50%;
+    border: unset;
+    transition: 0.2s linear;
+    padding: 0.7rem;
+    color:black;
+}
+
+
+.toolbar .btn.color {
+    padding: 0;
+}
+
+.toolbar .btn.active {
+    background-image: linear-gradient( 180.4deg,  rgba(33, 118, 255, 0.973) 1%, rgba(219, 13, 255, 0.688) 91.4% );;
+    box-shadow: rgba(0, 0, 0, 0.1) 0px 4px 6px -1px, rgba(0, 0, 0, 0.06) 0px 2px 4px -1px;
+    color: rgb(255, 255, 255);
+}
+.toolbar .btn.active:hover {
+    background-color:rgba(59, 84, 226, 0.541);
+}
+.toolbar .btn:hover{
+    background-color: rgb(240, 238, 238);
+}
+.toolbar .btn:active{
+    background-color: rgb(187, 187, 187);
+}
+.toolbar .undo {
+    margin-left: auto;
+}
+
+.setting-bar{
+    display: flex;
+    background-color: #fff;
+    height: 40px;
+}

@@ -1,0 +1,20 @@
+.canvas{
+    flex-grow: 1;
+}
+
+.canvas canvas {
+    background-color: #fff;
+}
+
+
+#paintCanvas{
+    background-color: rgba(255, 0, 0, 0);
+   
+}
+
+
+.pos {
+    position: absolute;
+    left: 0;
+    top: 0;
+}

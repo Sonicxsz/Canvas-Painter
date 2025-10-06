@@ -1,0 +1,44 @@
+@import url('./reset.css');
+
+@font-face {
+  /* font-family: 'Narmine';
+  src: url('/fonts/Narmine.woff2') format('woff2');
+  font-weight: bold;
+  font-style: normal; */
+} 
+
+* {
+  font-family: 'Narmine', sans-serif !important;
+  color: white;
+  letter-spacing: 1.5px !important;
+} 
+
+:root {
+  --bg-color: #191919;
+  --bg-content: #e6e9e9;
+}
+
+
+body{
+  width: 100%;
+  min-height: 100dvh;
+  padding: 0;
+  margin: 0;
+  background-color: var(--bg-color);
+}
+
+.rootLayout{
+  display: flex;
+  flex-direction: column;
+  max-width: 1640px;
+  min-height: 100dvh;
+  margin: 0 auto;
+  background-color: #53535b;
+}
+
+
+.error_text{
+  color: #f17171;
+  font-size: 18px;
+  font-weight: bold;
+}
