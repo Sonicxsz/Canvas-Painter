@@ -7,27 +7,29 @@ import { Tool } from "./Tool"
 export class CanvasApp {
     renderCanvas: HTMLCanvasElement
     paintCanvas: HTMLCanvasElement
+    controllCanvas:HTMLCanvasElement
 
     protected renderer: Renderer
     tool: Tool
-    sceneManager: SceneManager
+    scene: SceneManager
 
 
 
-    constructor(renderCanvas: HTMLCanvasElement, paintCanvas:HTMLCanvasElement){
+    constructor(renderCanvas: HTMLCanvasElement, paintCanvas:HTMLCanvasElement, controllCanvas:HTMLCanvasElement){
         this.renderCanvas = renderCanvas;
         this.paintCanvas = paintCanvas;
+        this.controllCanvas = controllCanvas;
 
 
         this.renderer = new Renderer(this.renderCanvas)
 
-        this.sceneManager = new SceneManager({
+        this.scene = new SceneManager({
             renderer: this.renderer.render
         })
 
         this.tool = new Tool(this.paintCanvas, {
-            addItem: this.sceneManager.addItem,
-            getNode: this.sceneManager.getNode
+            addItem: this.scene.addItem,
+            getNode: this.scene.getNode
         })  
     }
 

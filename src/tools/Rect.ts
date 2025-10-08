@@ -18,7 +18,12 @@ export class RectItem implements DrawableItem {
     constructor({id,height,styles,width,x,y,y2,x2}:{id: string, x: number, y: number,x2:number,y2:number, width: number, height: number, styles: ItemStyles}) {
         this.id = id;
         this.data = {
-            x,y,width,height,y2,x2
+            x,
+            y,
+            width,
+            height,
+            y2,
+            x2
         }
         this.styles = styles;
     }
@@ -44,6 +49,15 @@ export class RectTool extends BaseTool {
         height: 0
     };
 
+    clear(){
+        this.data = {
+        x: 0,
+        y: 0,
+        width: 0,
+        height: 0
+        }
+    }
+
     constructor(config:Tool) {
         super(config);
         this.listen();
@@ -57,21 +71,19 @@ export class RectTool extends BaseTool {
 
     mouseDownHandler(e: MouseEvent) {
         this.mouseDown = true;
-        const target = e.target as HTMLElement;
+        const position = this.getMousePos(e)
 
-        this.data.x = e.pageX - target.offsetLeft;
-        this.data.y = e.pageY - target.offsetTop;
+        this.data.x = position.x;
+        this.data.y = position.y;
     }
 
     mouseMoveHandler(e: MouseEvent) {
         if (!this.mouseDown) return;
 
-        const target = e.target as HTMLElement;
-        const currentX = e.pageX - target.offsetLeft;
-        const currentY = e.pageY - target.offsetTop;
+        const position = this.getMousePos(e)
 
-        this.data.width = currentX - this.data.x;
-        this.data.height = currentY - this.data.y;
+        this.data.width = position.x - this.data.x;
+        this.data.height = position.y - this.data.y;
 
         this.clearCanvas();
         this.drawPreview(this.ctx, this.data);
@@ -79,7 +91,9 @@ export class RectTool extends BaseTool {
 
     mouseUpHandler(e: MouseEvent) {
         this.mouseDown = false;
+        if(!this.data.width || !this.data.height) return
 
+        
         const position = this.getMousePos(e)
 
         const item = new RectItem(
@@ -97,6 +111,7 @@ export class RectTool extends BaseTool {
 
         this.addItem(item);
         this.clearCanvas();
+        this.clear();
     }
 
     drawPreview(ctx: CanvasRenderingContext2D, data: { x: number; y: number; width: number; height: number }) {

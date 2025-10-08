@@ -7,12 +7,12 @@ export class Cursor extends BaseTool {
         super(config)
         this.listen()
     }
-
     x = 0;
     y = 0;
+
+    canvasStyle = this.getCurrentCanvasStyles()
     
     mouseDown = false
-    saved = ""
 
     listen(){
         this.canvas.onmousedown = this.mouseDownHandler.bind(this)
@@ -20,53 +20,46 @@ export class Cursor extends BaseTool {
         this.canvas.onmousemove = this.mouseMoveHandler.bind(this)
     }
 
-    mouseUpHandler() {
+    mouseUpHandler(e:MouseEvent) {
         this.mouseDown = false
         this.clearCanvas()
+        this.setCanvasStyles(this.canvasStyle)
+        const position = this.getMousePos(e)
+        
+        this.getNode(this.x,this.y, position.x, position.y)
+
     }
 
     mouseDownHandler(e:MouseEvent) {
             this.mouseDown = true
             this.ctx.beginPath()
+            const position = this.getMousePos(e)
 
-
-            const target = e.target as HTMLElement;
-
-            this.x = e.pageX - target.offsetLeft
-            this.y = e.pageY - target.offsetTop
-
-            this.saved = this.canvas.toDataURL()
-
-            console.log(this.getNode(this.x,this.y))
+            this.x = position.x
+            this.y = position.y
     }
 
 
 
     mouseMoveHandler (e:MouseEvent) {
         if (!this.mouseDown) return;
-        const target = e.target as HTMLElement;
 
-        let currentX = e.pageX - target.offsetLeft;
-        let currentY = e.pageY - target.offsetTop;
+        const position = this.getMousePos(e)
 
-        const width = currentX - this.x;
-        const height = currentY - this.y;
+        const width = position.x - this.x;
+        const height = position.y - this.y;
 
-        
        this.clearCanvas()
-
        this.draw({x: this.x, y:this.y, width, height})
     }
 
-    // рисуем текущий прямоугольник поверх
+    // Рисуем текущий прямоугольник поверх
     draw(params: {x: number, y:number, width: number, height: number}) {
         const { x, y, width, height} = params
 
         this.ctx.beginPath();
-
-        this.strokeColor = "#6BE8B2"
-        this.fillColor = "#6be8b27f"
-
+        this.strokeColor =  "#4086f7"
+        this.fillColor = "#4086f766"
         this.ctx.rect(x, y, width, height);
         this.ctx.fill();
         this.ctx.stroke();

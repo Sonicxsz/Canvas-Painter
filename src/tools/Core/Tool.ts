@@ -1,17 +1,17 @@
 import type { DrawableItem, ItemStyles, Point } from "../Core.t"
 
-interface Config {
+interface Actions {
     addItem: (item:DrawableItem) => void
-    getNode:(x:number, y:number) => DrawableItem | null
+    getNode:(x:number, y:number, x2:number, y2:number) => DrawableItem | null
 }
 
 
 export class Tool {
-    protected config: Config
+    protected actions: Actions
     protected ctx:CanvasRenderingContext2D
     protected canvas: HTMLCanvasElement
 
-    constructor(canvas: HTMLCanvasElement, config: Config) {
+    constructor(canvas: HTMLCanvasElement, actions: Actions) {
         const ctx = canvas.getContext("2d")
         this.canvas = canvas
         
@@ -19,11 +19,11 @@ export class Tool {
             throw new Error("Cannot get context")
         }
         this.ctx = ctx
-        this.config = config
+        this.actions = actions
     }
 
     addItem(item:DrawableItem){
-        return this.config.addItem(item)
+        return this.actions.addItem(item)
     }
 
     getCanvas() {
@@ -34,8 +34,8 @@ export class Tool {
         return this.ctx
     }
 
-    getNode(x:number, y:number){
-        return this.config.getNode(x,y)
+    getNode(x:number, y:number, x2:number, y2:number){
+        return this.actions.getNode(x,y, x2, y2)
     }
 
     setFillColor(color: string | CanvasGradient | CanvasPattern) {
@@ -99,6 +99,13 @@ export class BaseTool {
         }
     }
 
+    setCanvasStyles(styles:Partial<ItemStyles>): void {
+        this.ctx.fillStyle = styles.fillStyle || this.ctx.fillStyle
+        this.ctx.lineCap = styles.lineCap || this.ctx.lineCap
+        this.ctx.lineWidth = styles.lineWidth || this.ctx.lineWidth
+        this.ctx.strokeStyle = styles.strokeStyle || this.ctx.strokeStyle
+    }
+
     destroyListeners() {
         if(this.canvas) {
             this.canvas.onmousemove = null
@@ -111,7 +118,7 @@ export class BaseTool {
         return `${Date.now()}_${Math.random()}`;
     }
 
-    getNode(x:number, y:number){
-        return this.config.getNode(x,y)
+    getNode(x:number, y:number, x2:number, y2:number){
+        return this.config.getNode(x,y,x2, y2)
     }
 }

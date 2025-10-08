@@ -1,19 +1,21 @@
 .toolbar {
-    width: 60px;
     display: flex;
-    flex-direction: column;
     background-image: linear-gradient(to right top, #f6f0f4, #eddfed5b, #e0cfea, #cdc1e8, #b4b5e8a1, #a7b9eb, #9abceb, #8ebfea, #a0cee9, #b8dce98c, #d4e8ec, #f2f3f3bb);
-    align-items: center;
-    z-index: 999;
-    padding: 0 20px;
-    top: 50%;
-    position: absolute;
-    gap: 20px;
-    left: 10px;
-    border-radius: 1rem;
     padding: 0.5rem;
-    transform: translateY(-50%);
+    position: fixed;
     box-shadow: rgb(38, 57, 77) 0px 20px 30px -10px;
+    border-radius: 1rem;
+    z-index: 999;
+    gap: 20px;
+}
+
+.toolbar__list {
+    width: 60px;
+    flex-direction: column;
+    align-items: center;
+    top: 50%;
+    left: 10px;
+    transform: translateY(-50%);
 }
 
 .toolbar .btn {
@@ -56,4 +58,13 @@
     display: flex;
     background-color: #fff;
     height: 40px;
+}
+
+
+.toolbar__bottomList{
+  bottom: 20px;
+  left: 50%;
+  gap: 50px;
+  padding: 0.5rem 1rem;
+  transform: translateX(-50%);
 }

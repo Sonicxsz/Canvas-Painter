@@ -9,8 +9,6 @@ export function HexColorPicker({ className ="", value = '#FFFF', onChange = (val
     const onClick = () => {
         setVisible(true)
     }
-    console.log(value)
-
     return <>
     <div ref={ref} onClick={onClick} style={{ backgroundColor: value }} className={`color_picker_wrapper ${className}`}>
        

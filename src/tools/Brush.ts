@@ -18,42 +18,39 @@ export class BrushItem implements DrawableItem{
 
     constructor(id: string, points: Point[], styles: ItemStyles){
         this.id = id;
-        const firstPoint = points[0]
-        const lastPoint = points.at(-1) || firstPoint
-
-
+        const square =  this.getMaxAndMinPoints(points)
 
         this.data = {
             dots: points,
-            x: firstPoint.x,
-            y: firstPoint.y,
-            x2: lastPoint.x,
-            y2: lastPoint.y
-
+            ...square
         };
         this.styles = styles;
     }
 
-    draw(ctx: CanvasRenderingContext2D): void {
-        if (this.data.dots.length < 2) return;
-        const points = this.data.dots
-        ctx.beginPath();
-        ctx.moveTo(points[0].x, points[0].y);
 
-        for (let i = 1; i < points.length - 2; i++) {
-            const xc = (points[i].x + points[i + 1].x) / 2;
-            const yc = (points[i].y + points[i + 1].y) / 2;
-            ctx.quadraticCurveTo(points[i].x, points[i].y, xc, yc);
-        }
+    getMaxAndMinPoints(points: Point[]): {
+        x: number;
+        y: number;
+        x2: number;
+        y2: number;
+    } {
+       const square =  {x:points[0].x,y:points[0].y,x2:points[0].x,y2:points[0].y}
 
-        const penultimate = points[points.length - 2];
-        const last = points[points.length - 1];
-        ctx.quadraticCurveTo(penultimate.x, penultimate.y, last.x, last.y);
+        points.forEach(el => {
+             if(el.x < square.x) square.x = el.x
+             if(el.y < square.y) square.y = el.y
 
-        ctx.stroke();
-        ctx.closePath();
+            if(el.x > square.x2 ) square.x2 = el.x
+            if(el.y > square.y2 ) square.y2 = el.y 
+        })
+
+        return square
     }
+
+    draw = (ctx: CanvasRenderingContext2D) => drawBrush(ctx, this.data.dots)
 }
+
+
 
 
 
@@ -92,19 +89,17 @@ export class BrushTool extends BaseTool {
     mouseDownHandler(e:MouseEvent) {
         this.mouseDown = true
         this.ctx?.beginPath()
+        const position = this.getMousePos(e)
 
-
-        const target = e.target as HTMLElement;
-        //TODO изучить
-        this.ctx?.moveTo(e.pageX - target.offsetLeft, e.pageY - target.offsetTop)
+        this.ctx?.moveTo(position.x, position.y)
     }
 
 
     mouseMoveHandler(e:MouseEvent) {
         if(this.mouseDown){
-            const target = e.target as HTMLElement;
-             this.x = e.pageX - target.offsetLeft
-             this.y = e.pageY - target.offsetTop
+            const position = this.getMousePos(e)
+             this.x = position.x
+             this.y = position.y
 
             const last = this.memory[this.memory.length - 1];
 
@@ -115,26 +110,26 @@ export class BrushTool extends BaseTool {
         }
     }
 
-    draw() {
+    draw = () => drawBrush(this.ctx, this.memory)
+}
 
-        if (this.memory.length < 2) return;
-        const points = this.memory
-        this.ctx.beginPath();
-        this.ctx.moveTo(points[0].x, points[0].y);
+
+// Рисовалка по точкам
+function drawBrush(ctx: CanvasRenderingContext2D, points: Point[]): void {
+    if (points.length < 2) return;
+        ctx.beginPath();
+        ctx.moveTo(points[0].x, points[0].y);
 
         for (let i = 1; i < points.length - 2; i++) {
             const xc = (points[i].x + points[i + 1].x) / 2;
             const yc = (points[i].y + points[i + 1].y) / 2;
-            this.ctx.quadraticCurveTo(points[i].x, points[i].y, xc, yc);
+            ctx.quadraticCurveTo(points[i].x, points[i].y, xc, yc);
         }
 
         const penultimate = points[points.length - 2];
         const last = points[points.length - 1];
-        this.ctx.quadraticCurveTo(penultimate.x, penultimate.y, last.x, last.y);
+        ctx.quadraticCurveTo(penultimate.x, penultimate.y, last.x, last.y);
 
-        this.ctx.stroke();
-        this.ctx.closePath();
-    }
-   
-
+        ctx.stroke();
+        ctx.closePath();
 }

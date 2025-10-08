@@ -1,18 +1,23 @@
 import type { DrawableItem, ItemStyles } from "./Core.t";
 import { BaseTool, Tool } from "./Core/Tool";
 
+interface CircleItemData extends CircleData {
+    x2: number;
+    y2: number;
+}
+
+interface CircleData{
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+}
+
 export class CircleItem implements DrawableItem {
     id: string;
     name = "CircleItem";
 
-    data: {
-        x: number;
-        y: number;
-        x2: number;
-        y2: number;
-        width: number;
-        height: number;
-    } 
+    data:  CircleItemData 
 
     styles: ItemStyles;
 
@@ -29,19 +34,7 @@ export class CircleItem implements DrawableItem {
         this.styles = data.styles;
     }
 
-    draw(ctx: CanvasRenderingContext2D): void {
-        const centerX = (this.data.x + this.data.width) / 2;
-        const centerY = (this.data.y + this.data.height) / 2;
-        const dx = this.data.width - this.data.x;
-        const dy = this.data.height - this.data.y;
-        const radius = Math.sqrt(dx * dx + dy * dy) / 2;
-
-        ctx.beginPath();
-        ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
-        ctx.fill();
-        ctx.stroke();
-        ctx.closePath();
-    }
+    draw = (ctx: CanvasRenderingContext2D) => drawCircle(ctx, this.data)
 }
 
 
@@ -51,12 +44,19 @@ export class CircleTool extends BaseTool {
     y = 0;
     width = 0;
     height = 0;
-    saved = "";
 
     constructor(config: Tool) {
         super(config);
         this.listen();
     }
+
+    reset() {
+          this.x = 0;
+          this.y = 0;
+          this.width = 0;
+          this.height = 0;
+    }
+
 
     listen() {
         this.canvas.onmousedown = this.mouseDownHandler.bind(this);
@@ -66,21 +66,17 @@ export class CircleTool extends BaseTool {
 
     mouseDownHandler(e: MouseEvent) {
         this.mouseDown = true;
-        const target = e.target as HTMLElement;
-        this.x = e.pageX - target.offsetLeft;
-        this.y = e.pageY - target.offsetTop;
-        this.saved = this.canvas.toDataURL();
+        const position = this.getMousePos(e)
+        this.x = position.x
+        this.y = position.y;
     }
 
     mouseUpHandler(e: MouseEvent) {
         this.mouseDown = false;
+        if(!this.width || !this.height) return
 
-
-         const position = this.getMousePos(e)
-
-
+        const position = this.getMousePos(e)
         const item = new CircleItem({
-            
             id:this.generateId(),
             x:this.x,
             y:this.y,
@@ -94,30 +90,34 @@ export class CircleTool extends BaseTool {
 
         this.addItem(item);
         this.clearCanvas();
+        this.reset();
     }
 
     mouseMoveHandler(e: MouseEvent) {
         if (!this.mouseDown) return;
-
-        const target = e.target as HTMLElement;
-        this.width = e.pageX - target.offsetLeft;
-        this.height = e.pageY - target.offsetTop;
+        const position = this.getMousePos(e)
+        this.width = position.x;
+        this.height = position.y;
 
         this.clearCanvas();
-        this.drawPreview(this.ctx, { x: this.x, y: this.y, width: this.width, height: this.height });
+        this.draw();
     }
 
-    drawPreview(ctx: CanvasRenderingContext2D, params: { x: number; y: number; width: number; height: number }) {
-        const { x, y, width, height } = params;
-        const centerX = (x + width) / 2;
-        const centerY = (y + height) / 2;
-        const dx = width - x;
-        const dy = height - y;
-        const radius = Math.sqrt(dx * dx + dy * dy) / 2;
+    draw = () =>  drawCircle(this.ctx, { x: this.x, y: this.y, width: this.width, height: this.height })
+}
 
-        ctx.beginPath();
-        ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
-        ctx.stroke();
-        ctx.closePath();
-    }
+
+
+function drawCircle(ctx: CanvasRenderingContext2D, data:CircleData) {
+    const centerX = (data.x + data.width) / 2;
+    const centerY = (data.y + data.height) / 2;
+    const dx = data.width - data.x;
+    const dy = data.height - data.y;
+    const radius = Math.sqrt(dx * dx + dy * dy) / 2;
+
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.stroke();
+    ctx.closePath();
 }

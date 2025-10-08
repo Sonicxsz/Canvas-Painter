@@ -10,19 +10,21 @@ export function CanvasPage(){
 
     const renderCanvas = useRef<HTMLCanvasElement | null>(null)
     const paintCanvas  = useRef<HTMLCanvasElement | null>(null)
+    const controllCanvas  = useRef<HTMLCanvasElement | null>(null)
+
 
     useEffect(() => {
-        if(renderCanvas.current && paintCanvas.current){
-            setApp(new CanvasApp(renderCanvas.current, paintCanvas.current))
+        if(renderCanvas.current && paintCanvas.current && controllCanvas.current){
+            setApp(new CanvasApp(renderCanvas.current, paintCanvas.current, controllCanvas.current))
         }
     }, [])
-
 
     return <div className="canvas_page_wrapper">
         <Canvas
             renderCanvasRef={renderCanvas}
             paintCanvasRef={paintCanvas}
-            render={app?.sceneManager.rerender}
+            controllCanvasRef={controllCanvas}
+            render={app?.scene.rerender}
         />
         <Toolbar config={app?.tool} />
     </div>

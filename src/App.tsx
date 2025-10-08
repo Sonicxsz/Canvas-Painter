@@ -3,7 +3,9 @@ import { CanvasPage } from './page/CanvasPage'
 
 function App() {
 
-  return (<CanvasPage/> )
+
+  
+  return <CanvasPage/>
 }
 
 export default App

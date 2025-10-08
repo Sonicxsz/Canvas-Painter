@@ -15,10 +15,11 @@ interface Canvas {
     render?: () => void 
     paintCanvasRef: React.RefObject<HTMLCanvasElement | null>
     renderCanvasRef: React.RefObject<HTMLCanvasElement | null>
+    controllCanvasRef: React.RefObject<HTMLCanvasElement | null>
 }
 
 
-export function Canvas({render, paintCanvasRef, renderCanvasRef}:Canvas) {
+export function Canvas({render, paintCanvasRef, renderCanvasRef, controllCanvasRef}:Canvas) {
     const [size,setSize] = useState<{width:number, height:number}>({
         width: window.outerWidth,
         height: window.outerHeight
@@ -35,8 +36,9 @@ export function Canvas({render, paintCanvasRef, renderCanvasRef}:Canvas) {
 
     return (
         <div className="canvas">
-             <canvas className="pos" width={size?.width} height={size?.height} ref={renderCanvasRef}></canvas>
-             <canvas id="paintCanvas" className="pos" width={size?.width} height={size?.height} ref={paintCanvasRef}></canvas> 
+            <canvas className="pos" width={size?.width} height={size?.height} ref={controllCanvasRef}></canvas>
+            <canvas className="pos" width={size?.width} height={size?.height} ref={renderCanvasRef}></canvas>
+            <canvas id="paintCanvas" className="pos" width={size?.width} height={size?.height} ref={paintCanvasRef}></canvas> 
        </div>
     )
 }

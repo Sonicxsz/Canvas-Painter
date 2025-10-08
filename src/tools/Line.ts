@@ -1,16 +1,18 @@
 import type { DrawableItem, ItemStyles } from "./Core.t";
-import { BaseTool, type ToolConfig } from "./Core/Tool";
+import { BaseTool, Tool} from "./Core/Tool";
 
-// ===== Line Item =====
-export class LineItem implements DrawableItem {
-    id: string;
-    name = "LineItem";
-    data: {
+
+interface LineData {
         x: number;
         y: number;
         x2: number;
         y2: number;
-    }
+}
+// ===== Line Item =====
+export class LineItem implements DrawableItem {
+    id: string;
+    name = "LineItem";
+    data: LineData
     styles: ItemStyles;
 
     constructor(id: string, x: number, y: number, x2: number, y2: number, styles: ItemStyles) {
@@ -24,26 +26,34 @@ export class LineItem implements DrawableItem {
         this.styles = styles;
     }
 
-    draw(ctx: CanvasRenderingContext2D): void {
-        ctx.beginPath();
-        ctx.moveTo(this.data.x, this.data.y);
-        ctx.lineTo(this.data.x2, this.data.y2);
-        ctx.stroke();
-        ctx.closePath();
-    }
+    draw = (ctx: CanvasRenderingContext2D) => drawLine(ctx, this.data)
 }
+
+
+
 
 
 // ===== Line Tool =====
 export class LineTool extends BaseTool {
     mouseDown = false;
-    startX = 0;
-    startY = 0;
-    x = 0;
-    y = 0;
-    saved = "";
+    data = {
+        x:0,
+        y:0,
+        x2:0,
+        y2:0
+    }
 
-    constructor(config: ToolConfig) {
+    reset() {
+        this.data = {
+            x:0,
+            y:0,
+            x2:0,
+            y2:0
+        }
+    }
+
+
+    constructor(config: Tool) {
         super(config);
         this.listen();
     }
@@ -56,46 +66,50 @@ export class LineTool extends BaseTool {
 
     mouseDownHandler(e: MouseEvent) {
         this.mouseDown = true;
-        const target = e.target as HTMLElement;
-        this.startX = e.pageX - target.offsetLeft;
-        this.startY = e.pageY - target.offsetTop;
-        this.saved = this.canvas.toDataURL();
+        const position = this.getMousePos(e)
+        this.data.x = position.x;
+        this.data.y = position.y;
     }
 
     mouseUpHandler() {
         this.mouseDown = false;
+        if(!this.data.x2 && !this.data.y2) return;
+
 
         const item = new LineItem(
             this.generateId(),
-            this.startX,
-            this.startY,
-            this.x,
-            this.y,
+            this.data.x,
+            this.data.y,
+            this.data.x2,
+            this.data.y2,
             this.getCurrentCanvasStyles()
         );
 
         this.addItem(item);
         this.clearCanvas();
+        this.reset()
     }
 
     mouseMoveHandler(e: MouseEvent) {
         if (!this.mouseDown) return;
+        const position = this.getMousePos(e)
 
-        const target = e.target as HTMLElement;
-        this.x = e.pageX - target.offsetLeft;
-        this.y = e.pageY - target.offsetTop;
+        this.data.x2 = position.x;
+        this.data.y2 = position.y;
 
 
         this.clearCanvas();
-        this.drawPreview(this.ctx, { x1: this.startX, y1: this.startY, x2: this.x, y2: this.y });
+        this.draw();
     }
 
-    drawPreview(ctx: CanvasRenderingContext2D, params: { x1: number; y1: number; x2: number; y2: number }) {
-        const { x1, y1, x2, y2 } = params;
+    draw = () => drawLine(this.ctx, this.data)
+}
+
+
+function drawLine(ctx: CanvasRenderingContext2D, data: LineData) {
         ctx.beginPath();
-        ctx.moveTo(x1, y1);
-        ctx.lineTo(x2, y2);
+        ctx.moveTo(data.x, data.y);
+        ctx.lineTo(data.x2, data.y2);
         ctx.stroke();
         ctx.closePath();
-    }
 }

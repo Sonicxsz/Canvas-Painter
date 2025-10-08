@@ -1,8 +1,8 @@
 import "./toolbar.css"
 import { Cursor } from "../../tools/Cursor"
 import {  LineTool } from "../../tools/Line"
-import { useState } from "react"
-import { BrushIcon, CircleIcon, CursorIcon, RectIcon } from "../../assets/svg"
+import { useEffect, useState } from "react"
+import { BrushIcon, CircleIcon, CursorIcon, RectIcon, UndoIcon } from "../../assets/svg"
 import { BrushTool } from "../../tools/Brush"
 
 import { CircleTool } from "../../tools/Circle"
@@ -15,12 +15,35 @@ export function Toolbar({config}:{config?:Tool}) {
     const [active, setActive] = useState(0)
     const [color,setColor] = useState("#000")
 
+    useEffect(() => {
+        function onKeyDown(e:KeyboardEvent){
+             const toolIndex = btns.findIndex(el => el.selectKey?.toLocaleLowerCase() === e.key)
+            if(toolIndex != -1 && config){
+                select(btns[toolIndex].id)
+                new btns[toolIndex].Tool(config)
+            }
+        }
 
-    const select = (id:number) => setActive(id)
+        window.addEventListener('keydown', onKeyDown)
+
+        return () => {
+            window.removeEventListener("keydown", onKeyDown)
+        }
+    }, [config])
     
     if(!config) return null
+d
+    const select = (id:number) => setActive(id)
 
-    return <div className="toolbar">
+    const onColorSelect = (val: string) => {
+            setColor(val)
+            config.setFillColor(val)
+    }
+
+    
+
+    return <>
+    <div className="toolbar toolbar__list">
        {
         btns.map(el => {
             return <button key={el.id} className={`btn ${el.class} ${active === el.id ? "active" : ""}`}
@@ -34,29 +57,48 @@ export function Toolbar({config}:{config?:Tool}) {
         })
        }
        <button className={`btn color`}>
-                <HexColorPicker value={color} onChange={(val) => {
-                    setColor(val)
-                    config.setFillColor(val)
-                }}/>
+                <HexColorPicker value={color} onChange={onColorSelect}/>
        </button>
-      
     </div>
+    <div className="toolbar toolbar__bottomList">
+            {
+             bottomList.map(el => <button key={el.id} className={`btn color`}>{el.icon}</button>)   
+            }
+    </div>
+    </>
 }
 
+
+
+
+ const bottomList = [
+    {
+        id: 1,
+        icon: <UndoIcon/>,
+        type: "undo"
+    },
+    {
+        id: 2,
+        icon: <UndoIcon style={{ transform: "   scaleX(-1)" }}/>,
+        type: "do"
+    }
+ ]
  const btns = [
         {
             class: "cursor",
             title: "cursor",
             id: 1,
             Tool: Cursor,
-            icon: <CursorIcon />
+            icon: <CursorIcon />,
+            selectKey: "w"
         },
         {
             class: "brush",
             title: "brush",
             id: 2,
             Tool: BrushTool,
-            icon: <BrushIcon />
+            icon: <BrushIcon />,
+            selectKey: "f"
         },
         {
             class: "rect",
