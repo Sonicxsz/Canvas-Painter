@@ -1,4 +1,5 @@
-import type { DrawableItem, CanvasStyles, Point } from "../Core.t"
+import { getMousePosition } from "../../lib/utils"
+import type { DrawableItem, CanvasStyles } from "../Core.t"
 
 interface Actions {
     addItem: (item:DrawableItem) => void
@@ -89,14 +90,7 @@ export class BaseTool {
         this.ctx.clearRect(0,0,this.canvas.width, this.canvas.height)
     }
 
-    getMousePos(e: MouseEvent): Point {
-        const target = e.target as HTMLElement;
-        const rect = target.getBoundingClientRect();
-        return {
-        x: e.clientX - rect.left,
-        y: e.clientY - rect.top,
-        };
-    }
+    getMousePos = (e: MouseEvent) =>  getMousePosition(e)
 
     getCurrentCanvasStyles():CanvasStyles{
         return {

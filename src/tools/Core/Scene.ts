@@ -1,10 +1,18 @@
-import type { DrawableItem } from "../Core.t";
+import { getMousePosition } from "../../lib/utils";
+import type { DrawableItem, ItemBaseInfo } from "../Core.t";
 
+
+export interface SelectRect {
+    x:number, 
+    y: number,
+    x2: number,
+    y2: number
+  }
 
 
 interface Config {
     renderMainLayer: (items: Map<string, DrawableItem>) => void
-    renderEditLayer: (items: Map<string, DrawableItem>) => void
+    renderEditLayer: (items: Map<string, DrawableItem>, selectionRect:SelectRect | null) => void
     paintCanvas:HTMLCanvasElement
 }
 
@@ -12,6 +20,8 @@ interface Config {
 export class SceneManager {
   private items: Map<string, DrawableItem> = new Map();
   private selectedItems:  Map<string, DrawableItem> = new Map();
+  private selectRect: SelectRect | null = null
+
   private renderEditLayerLoopId: null | number = null;
   private config: Config
 
@@ -19,19 +29,20 @@ export class SceneManager {
     this.config = config
     this.listen()
   }
-  
+
+
+
   listen() {
-        this.config.paintCanvas.onmousedown = this.onMouseDown.bind(this);
-        this.config.paintCanvas.onmouseup = this.onMouseUp.bind(this);
-        this.config.paintCanvas.onmousemove = this.onMouseMove.bind(this);
+      this.config.paintCanvas.addEventListener("mousemove",this.onMouseMove)
+      this.config.paintCanvas.addEventListener("mousedown",this.onMouseDown)
+      this.config.paintCanvas.addEventListener("mouseup",this.onMouseUp)
   }
 
-  onMouseMove = (e:MouseEvent) => {
-    // console.log(e.target)
-  }
-  onMouseUp = (e:MouseEvent) => {
-    // console.log(e.target)
-  }
+  getMousePos = (e: MouseEvent) => getMousePosition(e)
+
+  
+  onMouseMove = (e:MouseEvent) => {}
+  onMouseUp = (e:MouseEvent) => {}
   onMouseDown = (e:MouseEvent) => {}
 
 
@@ -40,29 +51,27 @@ export class SceneManager {
     this.rerender()
   }
 
-  selectItem = (item: DrawableItem) => {
-      this.selectedItems.set(item.id, item)
+  selectItem = (items: DrawableItem[]) => {
+    const {x,x2,y,y2} = items[0].data
+    this.selectRect = {x,x2,y,y2}
 
+    items.forEach(el => {
+      this.selectedItems.set(el.id, el)
       // Выкидываем из обычного рендера
-      this.items.delete(item.id)
+      this.items.delete(el.id)
+
+      if(!this.selectRect) return;
+
+
+      this.selectRect = generateRect(this.selectRect, el.data)
+    })
+
+      
       this.rerender()
-      this.renderOnSelect()
-  }
-
-  removeItem = (id: string) => {
-    this.items.delete(id);
-  }
-
-  getItem = (id: string): DrawableItem | undefined =>  {
-    return this.items.get(id);
-  }
-
-  getAllItems = (): DrawableItem[] => {
-    return Array.from(this.items.values());
+      this.renderSelected()
   }
 
 
-  // По координатам клика ищем 
   select = (initialX: number, initialY: number, endX:number, endY: number): DrawableItem | null => {
     const selX1 = Math.min(initialX, endX);
     const selY1 = Math.min(initialY, endY);
@@ -77,15 +86,17 @@ export class SceneManager {
           this.rerender()
     }
 
+    const selection: DrawableItem[] = []
+
     for (const el of this.items.values()) {
       const { x, y, x2, y2 } = el.data;
     
       if (rectsIntersect(x, y, x2, y2, selX1, selY1, selX2, selY2)) {
-        this.selectItem(el)
-        return el
+        selection.push(el)
       }
     }
 
+    if(selection.length) this.selectItem(selection)
     return null;
 };
 
@@ -94,19 +105,26 @@ export class SceneManager {
     this.selectedItems.forEach(el => {
       this.items.set(el.id, el)
     })
-    this.rerender()
+
+    // Убираем визуальное выделение
+    this.selectRect = null
     this.selectedItems.clear()
+
+    
+    this.rerender()
+    
   }
 
   rerender = () => {
     this.config.renderMainLayer(this.items)
   }
 
-  renderOnSelect = () => {
-    if(!this.selectedItems.size) return;
 
+  
+  renderSelected = () => {
     const loop = () => {
-      this.config.renderEditLayer(this.selectedItems)
+      this.config.renderEditLayer(this.selectedItems, this.selectRect)
+      
       if (!this.selectedItems.size && this.renderEditLayerLoopId) {
         cancelAnimationFrame(this.renderEditLayerLoopId);
         this.renderEditLayerLoopId = null;
@@ -118,12 +136,21 @@ export class SceneManager {
     if (!this.renderEditLayerLoopId) {
       this.renderEditLayerLoopId = requestAnimationFrame(loop);
     }
-
   }
-
 }
 
 
+
+// Формируем правильный прямоугольник для визуального выделения всех выбранных элементов
+function generateRect(currentRect:SelectRect,  item: ItemBaseInfo): SelectRect  {
+      const {x, x2,y, y2} = item
+      currentRect.x = x < currentRect.x ? x : currentRect.x
+      currentRect.x2 = x2 > currentRect.x2 ? x2 : currentRect.x2
+      currentRect.y = y < currentRect.y ? y : currentRect.y
+      currentRect.y2 = y2 > currentRect.y2 ? y2 : currentRect.y2
+
+      return currentRect
+}
 
 // Вычисляет пересечение по координатам 
 function rectsIntersect(

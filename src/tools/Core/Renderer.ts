@@ -1,4 +1,5 @@
 import type { CanvasStyles, DrawableItem} from "../Core.t";
+import type { SelectRect } from "./Scene";
 
 
 interface CanvasType  {
@@ -49,42 +50,39 @@ export class Renderer {
   }
 
 
-  renderEditLayer = (items: Map<string, DrawableItem>) => {
+  renderEditLayer = (items: Map<string, DrawableItem>, selectionRect: SelectRect | null) => {
     this.clear(this.editCanvas);
-    if(!items.size)  return;
+    if(!items.size || !selectionRect)  return;
 
     items.forEach(item => {
       this.applyStyles(this.editCanvas, item.styles);
       item.draw(this.editCanvas.ctx);
-      this.selectItem(item)
     });
+
+    this.selectItem(selectionRect)
   }
 
-  selectItem(item: DrawableItem) {
-    const margin = 0  
+  selectItem(selectionRect: SelectRect) {
+    const {x, x2, y, y2} = selectionRect
 
-    const x = item.data.x - margin
-    const y = item.data.y - margin
-    const w = item.data.x2 - x + margin
-    const h = item.data.y2 - y + margin
+   
     this.editCanvas.ctx.beginPath()
 
     this.editCanvas.ctx.strokeStyle = "#4086f7"
     this.editCanvas.ctx.fillStyle = "transparent"
     this.editCanvas.ctx.lineWidth = 2
-    this.editCanvas.ctx.rect(x, y, w, h)
+    this.editCanvas.ctx.rect(x, y, x2 - x, y2 - y)
     this.editCanvas.ctx.stroke()
 
-    this.renderCircles(item)
-
+    this.renderCircles(selectionRect)
   }
 
   // Рисует круги в углах выделения
-  renderCircles(item: DrawableItem){
+  renderCircles(selectionRect: SelectRect){
     const radius = 5;
     const endEngle = 2 * Math.PI
 
-    const {x, y, x2, y2} = item.data
+    const {x, y, x2, y2} = selectionRect
     const extraMarginSize = 5
     
     // Левый верхний
