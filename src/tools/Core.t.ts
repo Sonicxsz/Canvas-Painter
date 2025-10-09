@@ -1,4 +1,4 @@
-export interface ItemStyles {
+export interface CanvasStyles {
     fillStyle: string | CanvasGradient | CanvasPattern,
     strokeStyle: string | CanvasGradient | CanvasPattern,
     lineWidth: number,
@@ -8,7 +8,7 @@ export interface ItemStyles {
 export interface SerializableItem {
   id: string;
   name: string;
-  styles: ItemStyles;
+  styles: CanvasStyles;
   data: ItemBaseInfo;
 }
 

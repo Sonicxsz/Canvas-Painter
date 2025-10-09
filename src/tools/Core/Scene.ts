@@ -3,24 +3,50 @@ import type { DrawableItem } from "../Core.t";
 
 
 interface Config {
-    renderer: (items: Map<string, DrawableItem>, selected:  Map<string, DrawableItem>) => void
+    renderMainLayer: (items: Map<string, DrawableItem>) => void
+    renderEditLayer: (items: Map<string, DrawableItem>) => void
+    paintCanvas:HTMLCanvasElement
 }
 
 
 export class SceneManager {
   private items: Map<string, DrawableItem> = new Map();
-  private selected:  Map<string, DrawableItem> = new Map();
-
-
+  private selectedItems:  Map<string, DrawableItem> = new Map();
+  private renderEditLayerLoopId: null | number = null;
   private config: Config
 
   constructor(config: Config){
     this.config = config
+    this.listen()
   }
+  
+  listen() {
+        this.config.paintCanvas.onmousedown = this.onMouseDown.bind(this);
+        this.config.paintCanvas.onmouseup = this.onMouseUp.bind(this);
+        this.config.paintCanvas.onmousemove = this.onMouseMove.bind(this);
+  }
+
+  onMouseMove = (e:MouseEvent) => {
+    // console.log(e.target)
+  }
+  onMouseUp = (e:MouseEvent) => {
+    // console.log(e.target)
+  }
+  onMouseDown = (e:MouseEvent) => {}
+
 
   addItem = (item: DrawableItem) => {
     this.items.set(item.id, item);
     this.rerender()
+  }
+
+  selectItem = (item: DrawableItem) => {
+      this.selectedItems.set(item.id, item)
+
+      // Выкидываем из обычного рендера
+      this.items.delete(item.id)
+      this.rerender()
+      this.renderOnSelect()
   }
 
   removeItem = (id: string) => {
@@ -37,7 +63,7 @@ export class SceneManager {
 
 
   // По координатам клика ищем 
-  getNode = (initialX: number, initialY: number, endX:number, endY: number): DrawableItem | null => {
+  select = (initialX: number, initialY: number, endX:number, endY: number): DrawableItem | null => {
     const selX1 = Math.min(initialX, endX);
     const selY1 = Math.min(initialY, endY);
     const selX2 = Math.max(initialX, endX);
@@ -46,18 +72,16 @@ export class SceneManager {
 
     // Если уже что-то лежит в selected 
     // Перекидываем обратно в items
-     if(this.selected.size) {
+     if(this.selectedItems.size) {
           this.deselectItems()
           this.rerender()
-      }
+    }
 
     for (const el of this.items.values()) {
       const { x, y, x2, y2 } = el.data;
     
       if (rectsIntersect(x, y, x2, y2, selX1, selY1, selX2, selY2)) {
-        this.selected.set(el.id, el)
-        this.items.delete(el.id)
-        this.rerender()
+        this.selectItem(el)
         return el
       }
     }
@@ -66,15 +90,35 @@ export class SceneManager {
 };
 
 
-  deselectItems(){
-    this.selected.forEach(el => {
+  deselectItems = () => {
+    this.selectedItems.forEach(el => {
       this.items.set(el.id, el)
     })
-    this.selected.clear()
+    this.rerender()
+    this.selectedItems.clear()
   }
 
   rerender = () => {
-    this.config.renderer(this.items,this.selected)
+    this.config.renderMainLayer(this.items)
+  }
+
+  renderOnSelect = () => {
+    if(!this.selectedItems.size) return;
+
+    const loop = () => {
+      this.config.renderEditLayer(this.selectedItems)
+      if (!this.selectedItems.size && this.renderEditLayerLoopId) {
+        cancelAnimationFrame(this.renderEditLayerLoopId);
+        this.renderEditLayerLoopId = null;
+        return;
+      }
+      this.renderEditLayerLoopId = requestAnimationFrame(loop);
+    };
+
+    if (!this.renderEditLayerLoopId) {
+      this.renderEditLayerLoopId = requestAnimationFrame(loop);
+    }
+
   }
 
 }

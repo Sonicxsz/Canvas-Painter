@@ -1,4 +1,4 @@
-import type { DrawableItem, ItemStyles } from "./Core.t";
+import type { DrawableItem, CanvasStyles } from "./Core.t";
 import { BaseTool, Tool } from "./Core/Tool";
 
 interface CircleItemData extends CircleData {
@@ -19,9 +19,9 @@ export class CircleItem implements DrawableItem {
 
     data:  CircleItemData 
 
-    styles: ItemStyles;
+    styles: CanvasStyles;
 
-    constructor(data:{id: string, x: number, y: number,x2: number, y2: number, width: number, height: number, styles: ItemStyles}) {
+    constructor(data:{id: string, x: number, y: number,x2: number, y2: number, width: number, height: number, styles: CanvasStyles}) {
         this.id = data.id;
         this.data = {
             x:data.x,

@@ -36,9 +36,9 @@ export function Canvas({render, paintCanvasRef, renderCanvasRef, controllCanvasR
 
     return (
         <div className="canvas">
-            <canvas className="pos" width={size?.width} height={size?.height} ref={controllCanvasRef}></canvas>
-            <canvas className="pos" width={size?.width} height={size?.height} ref={renderCanvasRef}></canvas>
-            <canvas id="paintCanvas" className="pos" width={size?.width} height={size?.height} ref={paintCanvasRef}></canvas> 
+            <canvas className="position" width={size?.width} height={size?.height} ref={renderCanvasRef}></canvas>
+            <canvas className="position" width={size?.width} height={size?.height} ref={controllCanvasRef}></canvas>
+            <canvas id="paintCanvas" className="position" width={size?.width} height={size?.height} ref={paintCanvasRef}></canvas> 
        </div>
     )
 }

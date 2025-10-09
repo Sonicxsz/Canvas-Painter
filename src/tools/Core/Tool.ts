@@ -1,8 +1,9 @@
-import type { DrawableItem, ItemStyles, Point } from "../Core.t"
+import type { DrawableItem, CanvasStyles, Point } from "../Core.t"
 
 interface Actions {
     addItem: (item:DrawableItem) => void
-    getNode:(x:number, y:number, x2:number, y2:number) => DrawableItem | null
+    select:(x:number, y:number, x2:number, y2:number) => DrawableItem | null
+    clearEditCanvas:() => void
 }
 
 
@@ -10,6 +11,8 @@ export class Tool {
     protected actions: Actions
     protected ctx:CanvasRenderingContext2D
     protected canvas: HTMLCanvasElement
+    protected styles: CanvasStyles
+
 
     constructor(canvas: HTMLCanvasElement, actions: Actions) {
         const ctx = canvas.getContext("2d")
@@ -20,7 +23,15 @@ export class Tool {
         }
         this.ctx = ctx
         this.actions = actions
+
+        this.styles = {
+            fillStyle: this.ctx.fillStyle,
+            strokeStyle: this.ctx.strokeStyle,
+            lineCap: this.ctx.lineCap,
+            lineWidth: this.ctx.lineWidth,
+        }
     }
+
 
     addItem(item:DrawableItem){
         return this.actions.addItem(item)
@@ -34,13 +45,24 @@ export class Tool {
         return this.ctx
     }
 
-    getNode(x:number, y:number, x2:number, y2:number){
-        return this.actions.getNode(x,y, x2, y2)
+    select(x:number, y:number, x2:number, y2:number){
+        return this.actions.select(x,y, x2, y2)
     }
 
-    setFillColor(color: string | CanvasGradient | CanvasPattern) {
-        this.ctx.fillStyle = color
-        return 
+    setStyles(styles: Partial<CanvasStyles>) {
+        this.ctx.fillStyle = styles.fillStyle || this.ctx.fillStyle
+        this.ctx.strokeStyle = styles.strokeStyle || this.ctx.strokeStyle
+        this.ctx.lineCap = styles.lineCap || this.ctx.lineCap
+        this.ctx.lineWidth = styles.lineWidth || this.ctx.lineWidth
+        this.styles = {...this.styles, ...styles}
+    }
+
+    onToolChange = () => {
+        this.actions.clearEditCanvas()
+        if(this.styles){
+            this.setStyles(this.styles)
+        }
+        
     }
 }
 
@@ -55,21 +77,7 @@ export class BaseTool {
         this.canvas = config.getCanvas()
         this.ctx = config.getContext()
         this.config = config
-    }
-
-    set fillColor(color:string) {
-        if(this.ctx) this.ctx.fillStyle = color
-    }
-
-    set strokeColor(color:string) {
-        if(this.ctx) this.ctx.strokeStyle = color
-    }
-
-    set lineWidth(size:number){
-        if(this.ctx) this.ctx.lineWidth = size
-    }
-    set lineCap(variant:CanvasLineCap){
-        if(this.ctx) this.ctx.lineCap = variant
+        this.config.onToolChange()
     }
 
 
@@ -90,7 +98,7 @@ export class BaseTool {
         };
     }
 
-    getCurrentCanvasStyles():ItemStyles{
+    getCurrentCanvasStyles():CanvasStyles{
         return {
             fillStyle: this.ctx.fillStyle,
             lineCap: this.ctx.lineCap,
@@ -99,7 +107,7 @@ export class BaseTool {
         }
     }
 
-    setCanvasStyles(styles:Partial<ItemStyles>): void {
+    setCanvasStyles(styles:Partial<CanvasStyles>): void {
         this.ctx.fillStyle = styles.fillStyle || this.ctx.fillStyle
         this.ctx.lineCap = styles.lineCap || this.ctx.lineCap
         this.ctx.lineWidth = styles.lineWidth || this.ctx.lineWidth
@@ -118,7 +126,7 @@ export class BaseTool {
         return `${Date.now()}_${Math.random()}`;
     }
 
-    getNode(x:number, y:number, x2:number, y2:number){
-        return this.config.getNode(x,y,x2, y2)
+    selectByCoords(x:number, y:number, x2:number, y2:number){
+        return this.config.select(x,y,x2, y2)
     }
 }

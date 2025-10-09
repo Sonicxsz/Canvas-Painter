@@ -2,7 +2,7 @@ import { BaseTool, Tool } from "./Core/Tool";
 
 
 
-export class Cursor extends BaseTool {
+export class CursorTool extends BaseTool {
     constructor(config: Tool){
         super(config)
         this.listen()
@@ -23,11 +23,11 @@ export class Cursor extends BaseTool {
     mouseUpHandler(e:MouseEvent) {
         this.mouseDown = false
         this.clearCanvas()
+
         this.setCanvasStyles(this.canvasStyle)
         const position = this.getMousePos(e)
         
-        this.getNode(this.x,this.y, position.x, position.y)
-
+        this.selectByCoords(this.x,this.y, position.x, position.y)
     }
 
     mouseDownHandler(e:MouseEvent) {
@@ -44,10 +44,10 @@ export class Cursor extends BaseTool {
     mouseMoveHandler (e:MouseEvent) {
         if (!this.mouseDown) return;
 
-        const position = this.getMousePos(e)
+       const position = this.getMousePos(e)
 
-        const width = position.x - this.x;
-        const height = position.y - this.y;
+       const width = position.x - this.x;
+       const height = position.y - this.y;
 
        this.clearCanvas()
        this.draw({x: this.x, y:this.y, width, height})
@@ -58,8 +58,8 @@ export class Cursor extends BaseTool {
         const { x, y, width, height} = params
 
         this.ctx.beginPath();
-        this.strokeColor =  "#4086f7"
-        this.fillColor = "#4086f766"
+        this.ctx.strokeStyle =  "#4086f7"
+        this.ctx.fillStyle = "#4086f766"
         this.ctx.rect(x, y, width, height);
         this.ctx.fill();
         this.ctx.stroke();

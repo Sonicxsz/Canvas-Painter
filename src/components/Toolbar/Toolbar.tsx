@@ -1,12 +1,7 @@
 import "./toolbar.css"
-import { Cursor } from "../../tools/Cursor"
-import {  LineTool } from "../../tools/Line"
 import { useEffect, useState } from "react"
 import { BrushIcon, CircleIcon, CursorIcon, RectIcon, UndoIcon } from "../../assets/svg"
-import { BrushTool } from "../../tools/Brush"
-
-import { CircleTool } from "../../tools/Circle"
-import { RectTool } from "../../tools/Rect"
+import { ToolFabric, type AviableToolsType } from "../../tools/ToolFabric"
 import type { Tool } from "../../tools/Core/Tool"
 import { HexColorPicker } from "../ColorPicker/ColorPicker"
 
@@ -20,7 +15,7 @@ export function Toolbar({config}:{config?:Tool}) {
              const toolIndex = btns.findIndex(el => el.selectKey?.toLocaleLowerCase() === e.key)
             if(toolIndex != -1 && config){
                 select(btns[toolIndex].id)
-                new btns[toolIndex].Tool(config)
+                new ToolFabric(btns[toolIndex].type, config)
             }
         }
 
@@ -32,12 +27,12 @@ export function Toolbar({config}:{config?:Tool}) {
     }, [config])
     
     if(!config) return null
-d
+
     const select = (id:number) => setActive(id)
 
     const onColorSelect = (val: string) => {
             setColor(val)
-            config.setFillColor(val)
+            config.setStyles({fillStyle:val, strokeStyle: val})
     }
 
     
@@ -49,7 +44,7 @@ d
             return <button key={el.id} className={`btn ${el.class} ${active === el.id ? "active" : ""}`}
                 onClick={() => {
                     select(el.id)
-                    new el.Tool(config)
+                    new ToolFabric(el.type, config)
                 }}
             >
                { el.icon}
@@ -83,12 +78,24 @@ d
         type: "do"
     }
  ]
- const btns = [
+
+
+interface ToolView {
+    class: string
+    title: string
+    id: number
+    type: AviableToolsType
+    icon: React.ReactNode
+    selectKey?: string
+}
+
+
+ const btns:ToolView[] = [
         {
             class: "cursor",
             title: "cursor",
             id: 1,
-            Tool: Cursor,
+            type: "Cursor",
             icon: <CursorIcon />,
             selectKey: "w"
         },
@@ -96,7 +103,7 @@ d
             class: "brush",
             title: "brush",
             id: 2,
-            Tool: BrushTool,
+            type: "Brush",
             icon: <BrushIcon />,
             selectKey: "f"
         },
@@ -104,19 +111,19 @@ d
             class: "rect",
             title: "rect",
             id: 3,
-            Tool: RectTool,
+            type: "Rect",
             icon: <RectIcon />
         },{
             class: "circle",
             title: "circle",
             id: 4,
-            Tool: CircleTool,
+            type: "Circle",
             icon: <CircleIcon />
         },{
             class: "line",
             title: "line",
             id: 5,
-            Tool: LineTool,
+            type: "Line",
             icon: <BrushIcon />
         }
     ]

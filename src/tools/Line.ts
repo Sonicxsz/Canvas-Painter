@@ -1,4 +1,4 @@
-import type { DrawableItem, ItemStyles } from "./Core.t";
+import type { DrawableItem, CanvasStyles } from "./Core.t";
 import { BaseTool, Tool} from "./Core/Tool";
 
 
@@ -13,9 +13,9 @@ export class LineItem implements DrawableItem {
     id: string;
     name = "LineItem";
     data: LineData
-    styles: ItemStyles;
+    styles: CanvasStyles;
 
-    constructor(id: string, x: number, y: number, x2: number, y2: number, styles: ItemStyles) {
+    constructor(id: string, x: number, y: number, x2: number, y2: number, styles: CanvasStyles) {
         this.id = id;
         this.data = {
             x,

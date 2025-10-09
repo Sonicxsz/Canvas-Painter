@@ -1,12 +1,12 @@
 import simplify from "simplify-js";
 import { BaseTool, Tool } from "./Core/Tool";
-import type { DrawableItem, ItemStyles, Point } from "./Core.t";
+import type { DrawableItem, CanvasStyles, Point } from "./Core.t";
 
 
 
 export class BrushItem implements DrawableItem{
     id: string;
-    styles: ItemStyles;
+    styles: CanvasStyles;
     data: {
         dots: Point[],
         x: number,
@@ -16,7 +16,7 @@ export class BrushItem implements DrawableItem{
     };
     name = "BrushItem";
 
-    constructor(id: string, points: Point[], styles: ItemStyles){
+    constructor(id: string, points: Point[], styles: CanvasStyles){
         this.id = id;
         const square =  this.getMaxAndMinPoints(points)
 

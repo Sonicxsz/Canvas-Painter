@@ -1,4 +1,4 @@
-import type { DrawableItem, ItemStyles } from "./Core.t";
+import type { DrawableItem, CanvasStyles } from "./Core.t";
 import { BaseTool, Tool } from "./Core/Tool";
 
 // ===== Rect Item =====
@@ -13,9 +13,9 @@ export class RectItem implements DrawableItem {
         width: number;
         height: number;
     }
-    styles: ItemStyles;
+    styles: CanvasStyles;
 
-    constructor({id,height,styles,width,x,y,y2,x2}:{id: string, x: number, y: number,x2:number,y2:number, width: number, height: number, styles: ItemStyles}) {
+    constructor({id,height,styles,width,x,y,y2,x2}:{id: string, x: number, y: number,x2:number,y2:number, width: number, height: number, styles: CanvasStyles}) {
         this.id = id;
         this.data = {
             x,
