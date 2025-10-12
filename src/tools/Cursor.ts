@@ -7,6 +7,7 @@ export class CursorTool extends BaseTool {
         super(config)
         this.listen()
     }
+
     x = 0;
     y = 0;
 
@@ -26,15 +27,12 @@ export class CursorTool extends BaseTool {
 
         this.setCanvasStyles(this.canvasStyle)
         const position = this.getMousePos(e)
-        
         this.selectByCoords(this.x,this.y, position.x, position.y)
     }
 
     mouseDownHandler(e:MouseEvent) {
             this.mouseDown = true
-            this.ctx.beginPath()
             const position = this.getMousePos(e)
-
             this.x = position.x
             this.y = position.y
     }

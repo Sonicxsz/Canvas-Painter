@@ -16,6 +16,7 @@ export interface SerializableItem {
 export interface ItemBaseInfo extends Point {
   x2: number
   y2: number
+  dots?: Point[]
 }
 
 

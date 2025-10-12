@@ -25,6 +25,14 @@ export class SceneManager {
   private renderEditLayerLoopId: null | number = null;
   private config: Config
 
+  // Drag and drop
+  private isDragging: boolean = false;
+  private isCursorInsideSelection: boolean = false;
+  private dragStart: { x: number; y: number } | null = null;
+
+
+
+
   constructor(config: Config){
     this.config = config
     this.listen()
@@ -41,9 +49,85 @@ export class SceneManager {
   getMousePos = (e: MouseEvent) => getMousePosition(e)
 
   
-  onMouseMove = (e:MouseEvent) => {}
-  onMouseUp = (e:MouseEvent) => {}
-  onMouseDown = (e:MouseEvent) => {}
+  onMouseMove = (e:MouseEvent) => {
+    if(!this.selectRect) {
+      document.body.style.cursor = "default"
+      this.isCursorInsideSelection = false;
+      this.isDragging = false;
+      return;
+    };
+
+    const {x,y} = this.getMousePos(e)
+
+
+    if(isCursorInsideRect(x, y, this.selectRect)) {
+       document.body.style.cursor = "move"
+       this.isCursorInsideSelection = true;
+    }else{
+        document.body.style.cursor = "default"
+        this.isCursorInsideSelection = false;
+    }
+
+    this.moveDraggedItems(x,y)
+  }
+
+
+  moveDraggedItems = (x:number, y:number) => {
+    if(this.isCursorInsideSelection && this.isDragging && this.dragStart && this.selectRect) {
+        const dx = x - this.dragStart.x;
+        const dy = y - this.dragStart.y;
+
+        // Обновляем selectRect
+        this.selectRect = {
+          x: this.selectRect.x + dx,
+          y: this.selectRect.y + dy,
+          x2: this.selectRect.x2 + dx,
+          y2: this.selectRect.y2 + dy,
+        };
+
+        // Двигаем все выбранные элементы
+        this.selectedItems.forEach(item => {
+            // Двигаем базовые координаты
+            item.data.x += dx;
+            item.data.y += dy;
+            item.data.x2 += dx;
+            item.data.y2 += dy;
+
+            // Если это нарисованный элемент — двигаем все точки
+            if (Array.isArray(item.data.dots)) {
+              item.data.dots = item.data.dots.map(dot => ({
+                x: dot.x + dx,
+                y: dot.y + dy,
+              }));
+            }
+         });
+
+        
+
+
+        // Сохраняем текущую позицию как новую стартовую
+        this.dragStart = { x, y };
+    }
+  }
+
+
+  onMouseUp = (e:MouseEvent) => {
+    if(this.isDragging) {
+      e.stopImmediatePropagation()
+      this.isDragging = false;
+      this.dragStart = null;
+    }
+  }
+
+
+  onMouseDown = (e:MouseEvent) => {
+    if(this.isCursorInsideSelection) {
+      e.stopImmediatePropagation()
+      this.dragStart = this.getMousePos(e);
+      this.isDragging = true;
+
+    }
+  }
 
 
   addItem = (item: DrawableItem) => {
@@ -161,4 +245,12 @@ function rectsIntersect(
       ax1 < bx2 && ax2 > bx1 &&
       ay1 < by2 && ay2 > by1
     );
-  }
+}
+
+
+
+function isCursorInsideRect(cursorX: number, cursorY: number, rect: SelectRect): boolean {
+  return cursorX >= rect.x && cursorX <= rect.x2 && cursorY >= rect.y && cursorY <= rect.y2;
+}
+
+
