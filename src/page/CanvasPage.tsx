@@ -19,8 +19,11 @@ export function CanvasPage(){
         }
     }, [])
 
+
+   
+
     return <div className="canvas_page_wrapper">
-        <Canvas
+      <Canvas
             renderCanvasRef={renderCanvas}
             paintCanvasRef={paintCanvas}
             controllCanvasRef={controllCanvas}

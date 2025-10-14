@@ -1,0 +1,33 @@
+.weight_picker_wrapper{
+    width: 100%;
+    height: 100%;
+    border-radius: inherit;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.weight_picker__viewer{
+    background-color: black;
+    border-radius: 50%;
+}
+.weight-modal{
+    display: flex;
+    flex-direction: column;
+    background-color: #e6e4e4;
+    width: 200px;
+    border-radius: 0.8rem;
+    overflow: hidden;
+}
+
+.weight-modal__item{
+    padding: 5px;
+    width: 100%;
+    font-size: 18px;
+}
+
+
+
+.weight-modal__item:hover{
+    background-color: #3192e77a;
+}

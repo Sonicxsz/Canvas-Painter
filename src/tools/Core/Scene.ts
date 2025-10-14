@@ -1,5 +1,6 @@
 import { getMousePosition } from "../../lib/utils";
 import type { DrawableItem, ItemBaseInfo } from "../Core.t";
+import { correctRectangleAngles } from "../Rect";
 
 
 export interface SelectRect {
@@ -25,11 +26,19 @@ export class SceneManager {
   private renderEditLayerLoopId: null | number = null;
   private config: Config
 
-  // Drag and drop
+
+  // MOUSE 
+  private mouseStart: { x: number; y: number } | null = null;
+
+  // DRAG AND DROP
   private isDragging: boolean = false;
   private isCursorInsideSelection: boolean = false;
-  private dragStart: { x: number; y: number } | null = null;
 
+
+  // RESIZE
+  private isCursorInsideCorner:boolean = false;
+  private isResizing:boolean = false;
+  private resizingCorner:SelectedCorner = ""
 
 
 
@@ -48,14 +57,42 @@ export class SceneManager {
 
   getMousePos = (e: MouseEvent) => getMousePosition(e)
 
+  onMouseUp = (e:MouseEvent) => {
+    if(this.isDragging || this.isResizing) {
+      e.stopImmediatePropagation()
+      this.isDragging = false;
+      this.isResizing = false;
+      this.mouseStart = null;
+    }
+    console.log(this.selectedItems)
+  }
+
+
+  onMouseDown = (e:MouseEvent) => {
+    this.mouseStart = this.getMousePos(e);
+
+    if(this.isCursorInsideCorner) {
+      e.stopImmediatePropagation()
+      this.isResizing = true;
+    }
+
+    if(this.isCursorInsideSelection) {
+      e.stopImmediatePropagation()
+      this.isDragging = true;
+    }
+
+  }
   
   onMouseMove = (e:MouseEvent) => {
     if(!this.selectRect) {
       document.body.style.cursor = "default"
       this.isCursorInsideSelection = false;
       this.isDragging = false;
+      this.isResizing = false;
+      this.resizingCorner = "";
       return;
     };
+    
 
     const {x,y} = this.getMousePos(e)
 
@@ -68,14 +105,112 @@ export class SceneManager {
         this.isCursorInsideSelection = false;
     }
 
-    this.moveDraggedItems(x,y)
+    if(this.isDragging){
+      this.moveDraggedItems(x,y)
+    }
+
+
+
+
+    // Resize logic
+    if(this.isResizing) {
+      this.resizeSelectedItems(x, y)
+    }else{
+      const selectedCorner = isCursorOnPoint(x, y, this.selectRect)
+      changeCursorByResizeCorner(selectedCorner)
+      this.isCursorInsideCorner = Boolean(selectedCorner.length)
+      this.resizingCorner = selectedCorner
+    }
   }
+//NOTE Нужно увеличивать не одну сторону, а равномерно каждую в процентном соотношении
+resizeSelectedItems = (x: number, y: number) => {
+  if (!this.mouseStart || !this.selectRect) return;
+
+  const dx = x - this.mouseStart.x;
+  const dy = y - this.mouseStart.y;
+
+  let { x: rx1, y: ry1, x2: rx2, y2: ry2 } = this.selectRect;
+
+  switch (this.resizingCorner) {
+    case "LEFT_TOP":
+      rx1 += dx;
+      ry1 += dy;
+      break;
+    case "RIGHT_TOP":
+      rx2 += dx;
+      ry1 += dy;
+      break;
+    case "LEFT_BOTTOM":
+      rx1 += dx;
+      ry2 += dy;
+      break;
+    case "RIGHT_BOTTOM":
+      rx2 += dx;
+      ry2 += dy;
+      break;
+  }
+
+  // нормализуем координаты
+  const corrected = correctRectangleAngles({ x: rx1, y: ry1, x2: rx2, y2: ry2 });
+
+  // если стороны перевернулись, нужно «переключить» текущий угол
+  if (this.resizingCorner) {
+    const flippedX = rx1 > rx2;
+    const flippedY = ry1 > ry2;
+
+    if (flippedX && flippedY) {
+      // полностью зеркально
+      if (this.resizingCorner === "LEFT_TOP") this.resizingCorner = "RIGHT_BOTTOM";
+      else if (this.resizingCorner === "RIGHT_BOTTOM") this.resizingCorner = "LEFT_TOP";
+      else if (this.resizingCorner === "RIGHT_TOP") this.resizingCorner = "LEFT_BOTTOM";
+      else if (this.resizingCorner === "LEFT_BOTTOM") this.resizingCorner = "RIGHT_TOP";
+    } else if (flippedX) {
+      // только по горизонтали
+      if (this.resizingCorner === "LEFT_TOP") this.resizingCorner = "RIGHT_TOP";
+      else if (this.resizingCorner === "RIGHT_TOP") this.resizingCorner = "LEFT_TOP";
+      else if (this.resizingCorner === "LEFT_BOTTOM") this.resizingCorner = "RIGHT_BOTTOM";
+      else if (this.resizingCorner === "RIGHT_BOTTOM") this.resizingCorner = "LEFT_BOTTOM";
+    } else if (flippedY) {
+      // только по вертикали
+      if (this.resizingCorner === "LEFT_TOP") this.resizingCorner = "LEFT_BOTTOM";
+      else if (this.resizingCorner === "LEFT_BOTTOM") this.resizingCorner = "LEFT_TOP";
+      else if (this.resizingCorner === "RIGHT_TOP") this.resizingCorner = "RIGHT_BOTTOM";
+      else if (this.resizingCorner === "RIGHT_BOTTOM") this.resizingCorner = "RIGHT_TOP";
+    }
+  }
+
+  // обновляем selectRect
+  this.selectRect = corrected;
+
+  // обновляем выбранные элементы
+  this.selectedItems.forEach(item => {
+    let { x, y, x2, y2 } = item.data;
+    // вычисляем относительное смещение для этого угла
+    if (this.resizingCorner === "LEFT_TOP") {
+      x += dx;
+      y += dy;
+    } else if (this.resizingCorner === "RIGHT_TOP") {
+      x2 += dx;
+      y += dy;
+    } else if (this.resizingCorner === "LEFT_BOTTOM") {
+      x += dx;
+      y2 += dy;
+    } else if (this.resizingCorner === "RIGHT_BOTTOM") {
+      x2 += dx;
+      y2 += dy;
+    }
+    item.data = correctRectangleAngles({ x, y, x2, y2 });
+  });
+
+  // обновляем позицию мыши
+  this.mouseStart = { x, y };
+};
 
 
   moveDraggedItems = (x:number, y:number) => {
-    if(this.isCursorInsideSelection && this.isDragging && this.dragStart && this.selectRect) {
-        const dx = x - this.dragStart.x;
-        const dy = y - this.dragStart.y;
+    if(this.isCursorInsideSelection && this.mouseStart && this.selectRect) {
+        const dx = x - this.mouseStart.x;
+        const dy = y - this.mouseStart.y;
 
         // Обновляем selectRect
         this.selectRect = {
@@ -93,6 +228,9 @@ export class SceneManager {
             item.data.x2 += dx;
             item.data.y2 += dy;
 
+
+
+            //-------------- Связано с инструментом кисть
             // Если это нарисованный элемент — двигаем все точки
             if (Array.isArray(item.data.dots)) {
               item.data.dots = item.data.dots.map(dot => ({
@@ -100,32 +238,11 @@ export class SceneManager {
                 y: dot.y + dy,
               }));
             }
+            //-------------- Связано с инструментом кисть
          });
 
-        
-
-
         // Сохраняем текущую позицию как новую стартовую
-        this.dragStart = { x, y };
-    }
-  }
-
-
-  onMouseUp = (e:MouseEvent) => {
-    if(this.isDragging) {
-      e.stopImmediatePropagation()
-      this.isDragging = false;
-      this.dragStart = null;
-    }
-  }
-
-
-  onMouseDown = (e:MouseEvent) => {
-    if(this.isCursorInsideSelection) {
-      e.stopImmediatePropagation()
-      this.dragStart = this.getMousePos(e);
-      this.isDragging = true;
-
+        this.mouseStart = { x, y };
     }
   }
 
@@ -248,9 +365,48 @@ function rectsIntersect(
 }
 
 
-
+// Чекаем попадает ли курсов внутрь фигуры
 function isCursorInsideRect(cursorX: number, cursorY: number, rect: SelectRect): boolean {
   return cursorX >= rect.x && cursorX <= rect.x2 && cursorY >= rect.y && cursorY <= rect.y2;
 }
 
+
+// Меняем курсор в зависимости от того какую сторону тянем
+function changeCursorByResizeCorner(corner:SelectedCorner) {
+    console.log(corner)
+    if(corner === "LEFT_BOTTOM" || corner === "RIGHT_TOP") {
+      document.body.style.cursor = "ne-resize"
+      return
+    }
+    if(corner === "LEFT_TOP" || corner === "RIGHT_BOTTOM") {
+       document.body.style.cursor = "nw-resize"
+       return
+    }
+    document.body.style.cursor = "default"
+}
+
+
+
+// Детектит наведение на кружки по углам при выделении фигуры
+type SelectedCorner = "LEFT_TOP" | "RIGHT_TOP" | "LEFT_BOTTOM" | "RIGHT_BOTTOM" | ""
+
+function isCursorOnPoint(cursorX: number, cursorY: number, rect: SelectRect): SelectedCorner{
+  const maxArea = 15
+
+  const isUpperSide = rect.y - cursorY > 0 && rect.y - cursorY < maxArea
+  const isBottomPoint = cursorY - rect.y2 > 0 && cursorY - rect.y2 < maxArea
+
+  const isLeftSide = rect.x - cursorX > 0 && rect.x - cursorX < maxArea
+  const isRightSide = cursorX - rect.x2 > 0 && cursorX - rect.x2 < maxArea
+  
+
+  let type = ""
+
+  if(isLeftSide && isBottomPoint) type = "LEFT_BOTTOM"
+  if(isLeftSide && isUpperSide)  type = "LEFT_TOP"
+  if(isRightSide && isBottomPoint) type = "RIGHT_BOTTOM"
+  if(isRightSide && isUpperSide) type = "RIGHT_TOP"
+
+  return type as SelectedCorner
+}
 

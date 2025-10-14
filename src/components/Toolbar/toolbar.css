@@ -31,6 +31,9 @@
     color:black;
 }
 
+.toolbar .btn.p0{
+    padding: 0;
+}
 
 .toolbar .btn.color {
     padding: 0;

@@ -26,7 +26,7 @@ export class Tool {
         this.actions = actions
 
         this.styles = {
-            fillStyle: this.ctx.fillStyle,
+            fillStyle: "transparent",
             strokeStyle: this.ctx.strokeStyle,
             lineCap: this.ctx.lineCap,
             lineWidth: this.ctx.lineWidth,

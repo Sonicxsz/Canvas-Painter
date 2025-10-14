@@ -8,6 +8,9 @@ export class CursorTool extends BaseTool {
         this.listen()
     }
 
+
+
+
     x = 0;
     y = 0;
 
@@ -40,15 +43,22 @@ export class CursorTool extends BaseTool {
 
 
     mouseMoveHandler (e:MouseEvent) {
-        if (!this.mouseDown) return;
+        if (this.mouseDown) {
+            const position = this.getMousePos(e)
 
-       const position = this.getMousePos(e)
+            const width = position.x - this.x;
+            const height = position.y - this.y;
 
-       const width = position.x - this.x;
-       const height = position.y - this.y;
+            this.clearCanvas()
+            this.draw({x: this.x, y:this.y, width, height})
 
-       this.clearCanvas()
-       this.draw({x: this.x, y:this.y, width, height})
+            return;
+        }
+
+
+
+        
+       
     }
 
     // Рисуем текущий прямоугольник поверх
@@ -56,6 +66,7 @@ export class CursorTool extends BaseTool {
         const { x, y, width, height} = params
 
         this.ctx.beginPath();
+        this.ctx.lineWidth = 2
         this.ctx.strokeStyle =  "#4086f7"
         this.ctx.fillStyle = "#4086f766"
         this.ctx.rect(x, y, width, height);

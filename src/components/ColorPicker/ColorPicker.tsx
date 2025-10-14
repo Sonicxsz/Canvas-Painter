@@ -10,9 +10,7 @@ export function HexColorPicker({ className ="", value = '#FFFF', onChange = (val
         setVisible(true)
     }
     return <>
-    <div ref={ref} onClick={onClick} style={{ backgroundColor: value }} className={`color_picker_wrapper ${className}`}>
-       
-    </div>
+    <div ref={ref} onClick={onClick} style={{ backgroundColor: value }} className={`color_picker_wrapper ${className}`}></div>
      {visible && ref.current && (
             <Popup onClose={() => setVisible(false)} parent={ref}>
                 <HexAlphaColorPicker color={value} onChange={onChange} />

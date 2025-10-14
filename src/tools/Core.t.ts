@@ -28,3 +28,22 @@ export interface Point {
 export interface DrawableItem extends SerializableItem{
   draw(ctx: CanvasRenderingContext2D): void;
 }
+
+export interface Port {
+  id: string;
+  x: number;
+  y: number;
+  type: "input" | "output";
+}
+
+export interface Node extends DrawableItem {
+  data: ItemBaseInfo & {
+    ports: Port[];
+  };
+}
+
+export interface Edge {
+  id: string;
+  from: { nodeId: string; portId: string };
+  to: { nodeId: string; portId: string };
+}

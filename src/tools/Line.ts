@@ -8,6 +8,7 @@ interface LineData {
         x2: number;
         y2: number;
 }
+
 // ===== Line Item =====
 export class LineItem implements DrawableItem {
     id: string;

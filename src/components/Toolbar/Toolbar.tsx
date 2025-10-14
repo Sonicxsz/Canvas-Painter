@@ -1,14 +1,16 @@
 import "./toolbar.css"
 import { useEffect, useState } from "react"
-import { BrushIcon, CircleIcon, CursorIcon, RectIcon, UndoIcon } from "../../assets/svg"
+import { BrushIcon,  CursorIcon, RectIcon, UndoIcon } from "../../assets/svg"
 import { ToolFabric, type AviableToolsType } from "../../tools/ToolFabric"
 import type { Tool } from "../../tools/Core/Tool"
 import { HexColorPicker } from "../ColorPicker/ColorPicker"
+import { WeightPicker } from "../WeightPicker/WeightPicker"
 
 
 export function Toolbar({config}:{config?:Tool}) {
     const [active, setActive] = useState(0)
     const [color,setColor] = useState("#000")
+    const [weight, setWeight] = useState(4)
 
     useEffect(() => {
         function onKeyDown(e:KeyboardEvent){
@@ -32,7 +34,12 @@ export function Toolbar({config}:{config?:Tool}) {
 
     const onColorSelect = (val: string) => {
             setColor(val)
-            config.setStyles({fillStyle:val, strokeStyle: val})
+            config.setStyles({fillStyle:"transparent", strokeStyle: val})
+    }
+
+    const onWeightChange = (val: number) => {
+        setWeight(val)
+        config.setStyles({lineWidth: val})
     }
 
     
@@ -53,6 +60,10 @@ export function Toolbar({config}:{config?:Tool}) {
        }
        <button className={`btn color`}>
                 <HexColorPicker value={color} onChange={onColorSelect}/>
+       </button>
+
+        <button className={`btn p0`}  >
+                <WeightPicker value={weight} onChange={onWeightChange}/>
        </button>
     </div>
     <div className="toolbar toolbar__bottomList">
@@ -99,27 +110,29 @@ interface ToolView {
             icon: <CursorIcon />,
             selectKey: "w"
         },
-        {
-            class: "brush",
-            title: "brush",
-            id: 2,
-            type: "Brush",
-            icon: <BrushIcon />,
-            selectKey: "f"
-        },
+        // {
+        //     class: "brush",
+        //     title: "brush",
+        //     id: 2,
+        //     type: "Brush",
+        //     icon: <BrushIcon />,
+        //     selectKey: "f"
+        // },
         {
             class: "rect",
             title: "rect",
             id: 3,
             type: "Rect",
             icon: <RectIcon />
-        },{
-            class: "circle",
-            title: "circle",
-            id: 4,
-            type: "Circle",
-            icon: <CircleIcon />
-        },{
+        },
+        // {
+        //     class: "circle",
+        //     title: "circle",
+        //     id: 4,
+        //     type: "Circle",
+        //     icon: <CircleIcon />
+        // },
+        {
             class: "line",
             title: "line",
             id: 5,
