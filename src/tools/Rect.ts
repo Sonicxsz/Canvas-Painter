@@ -1,4 +1,5 @@
-import type { DrawableItem, CanvasStyles } from "./Core.t";
+import type { DrawableItem, CanvasStyles } from "./Core/Core.t";
+import { GeometryUtils } from "./Core/GeometryUtils";
 import { BaseTool, Tool } from "./Core/Tool";
 
 // ===== Rect Item =====
@@ -25,7 +26,7 @@ export class RectItem implements DrawableItem {
         this.styles = styles;
     }
 
-    draw(ctx: CanvasRenderingContext2D): void {
+    draw = (ctx: CanvasRenderingContext2D) => {
         ctx.beginPath();
         ctx.rect(this.data.x, this.data.y, this.data.x2 - this.data.x, this.data.y2 - this.data.y);
         ctx.fill();
@@ -96,7 +97,7 @@ export class RectTool extends BaseTool {
         const item = new RectItem(
            {
             id:this.generateId(),
-            ...correctRectangleAngles({x:this.data.x, y:this.data.y, x2:position.x, y2:position.y}),
+            ...GeometryUtils.correctRectAngles({x:this.data.x, y:this.data.y, x2:position.x, y2:position.y}),
             styles:this.getCurrentCanvasStyles()
            }
         );
@@ -115,11 +116,3 @@ export class RectTool extends BaseTool {
 }
 
 
-export function correctRectangleAngles({x,x2,y,y2}:{ x: number; y: number;x2:number; y2:number;}) {
-    return {
-            x:Math.min(x, x2),
-            y:Math.min(y, y2),
-            x2:Math.max(x, x2),
-            y2:Math.max(y, y2)
-    }
-}

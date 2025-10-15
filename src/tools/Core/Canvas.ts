@@ -23,16 +23,16 @@ export class CanvasApp {
 
         this.renderer = new Renderer(this.renderCanvas, this.editCanvas)
 
-        this.scene = new SceneManager({
+        this.scene = new SceneManager(this.paintCanvas,
+        {
             renderMainLayer: this.renderer.renderMainLayer,
             renderEditLayer: this.renderer.renderEditLayer,
-            paintCanvas: this.paintCanvas
         })
 
         this.tool = new Tool(this.paintCanvas, {
-            addItem: this.scene.addItem,
-            select: this.scene.select,
-            clearEditCanvas: this.scene.deselectItems
+            addItem: this.scene.addItem.bind(this.scene),
+            select: this.scene.selectArea.bind(this.scene),
+            clearEditCanvas: this.scene.deselectAll.bind(this.scene)
         })  
     }
 

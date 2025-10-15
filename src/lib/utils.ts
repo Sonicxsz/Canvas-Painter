@@ -1,4 +1,4 @@
-import type { Point } from "../tools/Core.t";
+import type { Point } from "../tools/Core/Core.t";
 
 export function getMousePosition (e: MouseEvent): Point {
         const target = e.target as HTMLElement;

@@ -1,4 +1,4 @@
-import type { DrawableItem, CanvasStyles } from "./Core.t";
+import type { DrawableItem, CanvasStyles } from "./Core/Core.t";
 import { BaseTool, Tool } from "./Core/Tool";
 
 interface CircleItemData extends CircleData {

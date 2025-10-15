@@ -1,5 +1,4 @@
-import type { CanvasStyles, DrawableItem} from "../Core.t";
-import type { SelectRect } from "./Scene";
+import type { CanvasStyles, DrawableItem, Rect} from "./Core.t";
 
 
 interface CanvasType  {
@@ -50,7 +49,7 @@ export class Renderer {
   }
 
 
-  renderEditLayer = (items: Map<string, DrawableItem>, selectionRect: SelectRect | null) => {
+  renderEditLayer = (items: Map<string, DrawableItem>, selectionRect: Rect | null) => {
     this.clear(this.editCanvas);
     if(!items.size || !selectionRect)  return;
 
@@ -62,7 +61,7 @@ export class Renderer {
     this.selectItem(selectionRect)
   }
 
-  selectItem(selectionRect: SelectRect) {
+  selectItem(selectionRect: Rect) {
     const {x, x2, y, y2} = selectionRect
 
    
@@ -78,7 +77,7 @@ export class Renderer {
   }
 
   // Рисует круги в углах выделения
-  renderCircles(selectionRect: SelectRect){
+  renderCircles(selectionRect: Rect){
     const radius = 5;
     const endEngle = 2 * Math.PI
 

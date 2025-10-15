@@ -47,3 +47,27 @@ export interface Edge {
   from: { nodeId: string; portId: string };
   to: { nodeId: string; portId: string };
 }
+
+// ==================== ТИПЫ ====================
+export interface Point {
+  x: number;
+  y: number;
+}
+
+export interface Rect {
+  x: number;
+  y: number;
+  x2: number;
+  y2: number;
+}
+
+export type Corner = "LEFT_TOP" | "RIGHT_TOP" | "LEFT_BOTTOM" | "RIGHT_BOTTOM";
+
+export interface DrawableItem {
+  id: string;
+  data: ItemData;
+}
+
+export interface ItemData extends Rect {
+  dots?: Point[];
+}

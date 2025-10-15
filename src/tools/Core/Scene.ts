@@ -1,412 +1,211 @@
-import { getMousePosition } from "../../lib/utils";
-import type { DrawableItem, ItemBaseInfo } from "../Core.t";
-import { correctRectangleAngles } from "../Rect";
+import type { DrawableItem, Point, Rect } from "./Core.t";
+import { DragHandler } from "./Drag";
+import  { EventManager } from "./Event";
+import  { ResizeHandler } from "./Resize";
+import { SelectionManager } from "./Selection";
+import  { CursorManager } from "./Cursor";
+import  { CornerDetector } from "./CornerDetector";
+import { GeometryUtils } from "./GeometryUtils";
 
-
-export interface SelectRect {
-    x:number, 
-    y: number,
-    x2: number,
-    y2: number
-  }
-
-
-interface Config {
-    renderMainLayer: (items: Map<string, DrawableItem>) => void
-    renderEditLayer: (items: Map<string, DrawableItem>, selectionRect:SelectRect | null) => void
-    paintCanvas:HTMLCanvasElement
+// ==================== ГЛАВНЫЙ МЕНЕДЖЕР СЦЕНЫ ====================
+export interface RenderConfig {
+  renderMainLayer: (items: Map<string, DrawableItem>) => void;
+  renderEditLayer: (items: Map<string, DrawableItem>, selectionRect: Rect | null) => void;
 }
-
 
 export class SceneManager {
-  private items: Map<string, DrawableItem> = new Map();
-  private selectedItems:  Map<string, DrawableItem> = new Map();
-  private selectRect: SelectRect | null = null
+  private items = new Map<string, DrawableItem>();
+  private renderLoopId: number | null = null;
 
-  private renderEditLayerLoopId: null | number = null;
-  private config: Config
+  // Модули
+  private selectionManager: SelectionManager;
+  private dragHandler: DragHandler;
+  private resizeHandler: ResizeHandler;
+  private cursorManager: CursorManager;
+  private cornerDetector: CornerDetector;
+  private eventManager: EventManager;
 
+  private config: RenderConfig;
 
-  // MOUSE 
-  private mouseStart: { x: number; y: number } | null = null;
+  private canvas: HTMLCanvasElement;
 
-  // DRAG AND DROP
-  private isDragging: boolean = false;
-  private isCursorInsideSelection: boolean = false;
+  constructor(
+    canvas: HTMLCanvasElement,
+    config: RenderConfig
+  ) {
+    this.canvas = canvas;
+    this.config = config;
+    this.selectionManager = new SelectionManager();
+    this.dragHandler = new DragHandler();
+    this.resizeHandler = new ResizeHandler();
+    this.cursorManager = new CursorManager(canvas);
+    this.cornerDetector = new CornerDetector();
+    this.eventManager = new EventManager(canvas);
 
-
-  // RESIZE
-  private isCursorInsideCorner:boolean = false;
-  private isResizing:boolean = false;
-  private resizingCorner:SelectedCorner = ""
-
-
-
-  constructor(config: Config){
-    this.config = config
-    this.listen()
+    this.setupEventListeners();
   }
 
-
-
-  listen() {
-      this.config.paintCanvas.addEventListener("mousemove",this.onMouseMove)
-      this.config.paintCanvas.addEventListener("mousedown",this.onMouseDown)
-      this.config.paintCanvas.addEventListener("mouseup",this.onMouseUp)
+  private setupEventListeners(): void {
+    this.eventManager.on("mousedown", this.handleMouseDown);
+    this.eventManager.on("mousemove", this.handleMouseMove);
+    this.eventManager.on("mouseup", this.handleMouseUp);
   }
 
-  getMousePos = (e: MouseEvent) => getMousePosition(e)
-
-  onMouseUp = (e:MouseEvent) => {
-    if(this.isDragging || this.isResizing) {
-      e.stopImmediatePropagation()
-      this.isDragging = false;
-      this.isResizing = false;
-      this.mouseStart = null;
-    }
-    console.log(this.selectedItems)
-  }
-
-
-  onMouseDown = (e:MouseEvent) => {
-    this.mouseStart = this.getMousePos(e);
-
-    if(this.isCursorInsideCorner) {
-      e.stopImmediatePropagation()
-      this.isResizing = true;
-    }
-
-    if(this.isCursorInsideSelection) {
-      e.stopImmediatePropagation()
-      this.isDragging = true;
-    }
-
-  }
-  
-  onMouseMove = (e:MouseEvent) => {
-    if(!this.selectRect) {
-      document.body.style.cursor = "default"
-      this.isCursorInsideSelection = false;
-      this.isDragging = false;
-      this.isResizing = false;
-      this.resizingCorner = "";
-      return;
+  private getMousePos(e: MouseEvent): Point {
+    const rect = this.canvas.getBoundingClientRect();
+    return {
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top,
     };
+  }
+
+  private handleMouseDown = (e: MouseEvent): void => {
+    const point = this.getMousePos(e);
+    const selectionRect = this.selectionManager.getSelectionRect();
+
+    if (!selectionRect) return;
+
+    const corner = this.cornerDetector.detectCorner(point, selectionRect);
     
+    if (corner) {
+      e.stopImmediatePropagation();
+      this.resizeHandler.startResize(point, corner);
+    } else if (this.selectionManager.isPointInSelection(point)) {
+      e.stopImmediatePropagation();
+      this.dragHandler.startDrag(point);
+    }
+  };
 
-    const {x,y} = this.getMousePos(e)
+  private handleMouseMove = (e: MouseEvent): void => {
+    const point = this.getMousePos(e);
+    const selectionRect = this.selectionManager.getSelectionRect();
 
-
-    if(isCursorInsideRect(x, y, this.selectRect)) {
-       document.body.style.cursor = "move"
-       this.isCursorInsideSelection = true;
-    }else{
-        document.body.style.cursor = "default"
-        this.isCursorInsideSelection = false;
+    if (!selectionRect) {
+      this.cursorManager.setDefault();
+      return;
     }
 
-    if(this.isDragging){
-      this.moveDraggedItems(x,y)
+    // Обработка drag
+    if (this.dragHandler.isActive()) {
+      const selectedItems = Array.from(this.selectionManager.getSelectedItems().values());
+      const { items, rect } = this.dragHandler.drag(point, selectedItems, selectionRect);
+      
+      this.updateSelectedItems(items);
+      this.selectionManager.updateSelectionRect();
+      this.startRenderLoop();
+      return;
     }
 
-
-
-
-    // Resize logic
-    if(this.isResizing) {
-      this.resizeSelectedItems(x, y)
-    }else{
-      const selectedCorner = isCursorOnPoint(x, y, this.selectRect)
-      changeCursorByResizeCorner(selectedCorner)
-      this.isCursorInsideCorner = Boolean(selectedCorner.length)
-      this.resizingCorner = selectedCorner
+    // Обработка resize
+    if (this.resizeHandler.isActive()) {
+      const selectedItems = Array.from(this.selectionManager.getSelectedItems().values());
+      const { items, rect } = this.resizeHandler.resize(point, selectedItems, selectionRect);
+      
+      this.updateSelectedItems(items);
+      this.selectionManager.updateSelectionRect();
+      this.startRenderLoop();
+      return;
     }
-  }
-//NOTE Нужно увеличивать не одну сторону, а равномерно каждую в процентном соотношении
-resizeSelectedItems = (x: number, y: number) => {
-  if (!this.mouseStart || !this.selectRect) return;
 
-  const dx = x - this.mouseStart.x;
-  const dy = y - this.mouseStart.y;
-
-  let { x: rx1, y: ry1, x2: rx2, y2: ry2 } = this.selectRect;
-
-  switch (this.resizingCorner) {
-    case "LEFT_TOP":
-      rx1 += dx;
-      ry1 += dy;
-      break;
-    case "RIGHT_TOP":
-      rx2 += dx;
-      ry1 += dy;
-      break;
-    case "LEFT_BOTTOM":
-      rx1 += dx;
-      ry2 += dy;
-      break;
-    case "RIGHT_BOTTOM":
-      rx2 += dx;
-      ry2 += dy;
-      break;
-  }
-
-  // нормализуем координаты
-  const corrected = correctRectangleAngles({ x: rx1, y: ry1, x2: rx2, y2: ry2 });
-
-  // если стороны перевернулись, нужно «переключить» текущий угол
-  if (this.resizingCorner) {
-    const flippedX = rx1 > rx2;
-    const flippedY = ry1 > ry2;
-
-    if (flippedX && flippedY) {
-      // полностью зеркально
-      if (this.resizingCorner === "LEFT_TOP") this.resizingCorner = "RIGHT_BOTTOM";
-      else if (this.resizingCorner === "RIGHT_BOTTOM") this.resizingCorner = "LEFT_TOP";
-      else if (this.resizingCorner === "RIGHT_TOP") this.resizingCorner = "LEFT_BOTTOM";
-      else if (this.resizingCorner === "LEFT_BOTTOM") this.resizingCorner = "RIGHT_TOP";
-    } else if (flippedX) {
-      // только по горизонтали
-      if (this.resizingCorner === "LEFT_TOP") this.resizingCorner = "RIGHT_TOP";
-      else if (this.resizingCorner === "RIGHT_TOP") this.resizingCorner = "LEFT_TOP";
-      else if (this.resizingCorner === "LEFT_BOTTOM") this.resizingCorner = "RIGHT_BOTTOM";
-      else if (this.resizingCorner === "RIGHT_BOTTOM") this.resizingCorner = "LEFT_BOTTOM";
-    } else if (flippedY) {
-      // только по вертикали
-      if (this.resizingCorner === "LEFT_TOP") this.resizingCorner = "LEFT_BOTTOM";
-      else if (this.resizingCorner === "LEFT_BOTTOM") this.resizingCorner = "LEFT_TOP";
-      else if (this.resizingCorner === "RIGHT_TOP") this.resizingCorner = "RIGHT_BOTTOM";
-      else if (this.resizingCorner === "RIGHT_BOTTOM") this.resizingCorner = "RIGHT_TOP";
+    // Обновление курсора
+    const corner = this.cornerDetector.detectCorner(point, selectionRect);
+    if (corner) {
+      this.cursorManager.setResize(corner);
+    } else if (this.selectionManager.isPointInSelection(point)) {
+      this.cursorManager.setMove();
+    } else {
+      this.cursorManager.setDefault();
     }
+  };
+
+  private handleMouseUp = (e: MouseEvent): void => {
+    if (this.dragHandler.isActive() || this.resizeHandler.isActive()) {
+      e.stopImmediatePropagation();
+      this.dragHandler.stopDrag();
+      this.resizeHandler.stopResize();
+    }
+  };
+
+  private updateSelectedItems(items: DrawableItem[]): void {
+    const selectedMap = this.selectionManager.getSelectedItems();
+    items.forEach(item => selectedMap.set(item.id, item));
   }
 
-  // обновляем selectRect
-  this.selectRect = corrected;
+  // ==================== ПУБЛИЧНЫЕ МЕТОДЫ ====================
 
-  // обновляем выбранные элементы
-  this.selectedItems.forEach(item => {
-    let { x, y, x2, y2 } = item.data;
-    // вычисляем относительное смещение для этого угла
-    if (this.resizingCorner === "LEFT_TOP") {
-      x += dx;
-      y += dy;
-    } else if (this.resizingCorner === "RIGHT_TOP") {
-      x2 += dx;
-      y += dy;
-    } else if (this.resizingCorner === "LEFT_BOTTOM") {
-      x += dx;
-      y2 += dy;
-    } else if (this.resizingCorner === "RIGHT_BOTTOM") {
-      x2 += dx;
-      y2 += dy;
-    }
-    item.data = correctRectangleAngles({ x, y, x2, y2 });
-  });
-
-  // обновляем позицию мыши
-  this.mouseStart = { x, y };
-};
-
-
-  moveDraggedItems = (x:number, y:number) => {
-    if(this.isCursorInsideSelection && this.mouseStart && this.selectRect) {
-        const dx = x - this.mouseStart.x;
-        const dy = y - this.mouseStart.y;
-
-        // Обновляем selectRect
-        this.selectRect = {
-          x: this.selectRect.x + dx,
-          y: this.selectRect.y + dy,
-          x2: this.selectRect.x2 + dx,
-          y2: this.selectRect.y2 + dy,
-        };
-
-        // Двигаем все выбранные элементы
-        this.selectedItems.forEach(item => {
-            // Двигаем базовые координаты
-            item.data.x += dx;
-            item.data.y += dy;
-            item.data.x2 += dx;
-            item.data.y2 += dy;
-
-
-
-            //-------------- Связано с инструментом кисть
-            // Если это нарисованный элемент — двигаем все точки
-            if (Array.isArray(item.data.dots)) {
-              item.data.dots = item.data.dots.map(dot => ({
-                x: dot.x + dx,
-                y: dot.y + dy,
-              }));
-            }
-            //-------------- Связано с инструментом кисть
-         });
-
-        // Сохраняем текущую позицию как новую стартовую
-        this.mouseStart = { x, y };
-    }
-  }
-
-
-  addItem = (item: DrawableItem) => {
+  addItem(item: DrawableItem): void {
     this.items.set(item.id, item);
-    this.rerender()
+    this.renderMainLayer();
   }
 
-  selectItem = (items: DrawableItem[]) => {
-    const {x,x2,y,y2} = items[0].data
-    this.selectRect = {x,x2,y,y2}
+  selectArea(start: Point, end: Point): void {
+    const selectionArea = GeometryUtils.correctRectAngles({
+      x: start.x,
+      y: start.y,
+      x2: end.x,
+      y2: end.y,
+    });
 
-    items.forEach(el => {
-      this.selectedItems.set(el.id, el)
-      // Выкидываем из обычного рендера
-      this.items.delete(el.id)
-
-      if(!this.selectRect) return;
-
-
-      this.selectRect = generateRect(this.selectRect, el.data)
-    })
-
-      
-      this.rerender()
-      this.renderSelected()
-  }
-
-
-  select = (initialX: number, initialY: number, endX:number, endY: number): DrawableItem | null => {
-    const selX1 = Math.min(initialX, endX);
-    const selY1 = Math.min(initialY, endY);
-    const selX2 = Math.max(initialX, endX);
-    const selY2 = Math.max(initialY, endY);
-
-
-    // Если уже что-то лежит в selected 
-    // Перекидываем обратно в items
-     if(this.selectedItems.size) {
-          this.deselectItems()
-          this.rerender()
+    // Переносим выделенные элементы обратно
+    if (this.selectionManager.hasSelection()) {
+      this.deselectAll();
     }
 
-    const selection: DrawableItem[] = []
-
-    for (const el of this.items.values()) {
-      const { x, y, x2, y2 } = el.data;
+    const intersecting = this.selectionManager.findIntersectingItems(this.items, selectionArea);
     
-      if (rectsIntersect(x, y, x2, y2, selX1, selY1, selX2, selY2)) {
-        selection.push(el)
-      }
+    if (intersecting.length) {
+      intersecting.forEach(item => this.items.delete(item.id));
+      this.selectionManager.select(intersecting);
+      this.renderMainLayer();
+      this.startRenderLoop();
+
+
+      console.log({mainItems:this.items})
     }
-
-    if(selection.length) this.selectItem(selection)
-    return null;
-};
-
-
-  deselectItems = () => {
-    this.selectedItems.forEach(el => {
-      this.items.set(el.id, el)
-    })
-
-    // Убираем визуальное выделение
-    this.selectRect = null
-    this.selectedItems.clear()
-
-    
-    this.rerender()
-    
   }
 
-  rerender = () => {
-    this.config.renderMainLayer(this.items)
+  deselectAll(): void {
+    const selectedItems = this.selectionManager.getSelectedItems();
+    selectedItems.forEach(item => this.items.set(item.id, item));
+    this.selectionManager.clear();
+    this.stopRenderLoop();
+    this.renderMainLayer();
   }
 
+  private renderMainLayer(): void {
+    this.config.renderMainLayer(this.items);
+  }
 
-  
-  renderSelected = () => {
+  private startRenderLoop(): void {
+    if (this.renderLoopId) return;
+
     const loop = () => {
-      this.config.renderEditLayer(this.selectedItems, this.selectRect)
-      
-      if (!this.selectedItems.size && this.renderEditLayerLoopId) {
-        cancelAnimationFrame(this.renderEditLayerLoopId);
-        this.renderEditLayerLoopId = null;
+      const rect = this.selectionManager.getSelectionRect()
+      this.config.renderEditLayer(this.selectionManager.getSelectedItems(), rect)
+    
+
+      if (!this.selectionManager.hasSelection()) {
+        this.stopRenderLoop();
         return;
       }
-      this.renderEditLayerLoopId = requestAnimationFrame(loop);
+
+      this.renderLoopId = requestAnimationFrame(loop);
     };
 
-    if (!this.renderEditLayerLoopId) {
-      this.renderEditLayerLoopId = requestAnimationFrame(loop);
+    this.renderLoopId = requestAnimationFrame(loop);
+  }
+
+  private stopRenderLoop(): void {
+    if (this.renderLoopId) {
+      cancelAnimationFrame(this.renderLoopId);
+      this.renderLoopId = null;
     }
   }
+
+  destroy(): void {
+    this.stopRenderLoop();
+    this.eventManager.destroy();
+    this.items.clear();
+    this.selectionManager.clear();
+  }
 }
-
-
-
-// Формируем правильный прямоугольник для визуального выделения всех выбранных элементов
-function generateRect(currentRect:SelectRect,  item: ItemBaseInfo): SelectRect  {
-      const {x, x2,y, y2} = item
-      currentRect.x = x < currentRect.x ? x : currentRect.x
-      currentRect.x2 = x2 > currentRect.x2 ? x2 : currentRect.x2
-      currentRect.y = y < currentRect.y ? y : currentRect.y
-      currentRect.y2 = y2 > currentRect.y2 ? y2 : currentRect.y2
-
-      return currentRect
-}
-
-// Вычисляет пересечение по координатам 
-function rectsIntersect(
-    ax1: number, ay1: number, ax2: number, ay2: number,
-    bx1: number, by1: number, bx2: number, by2: number
-  ): boolean {
-    return (
-      ax1 < bx2 && ax2 > bx1 &&
-      ay1 < by2 && ay2 > by1
-    );
-}
-
-
-// Чекаем попадает ли курсов внутрь фигуры
-function isCursorInsideRect(cursorX: number, cursorY: number, rect: SelectRect): boolean {
-  return cursorX >= rect.x && cursorX <= rect.x2 && cursorY >= rect.y && cursorY <= rect.y2;
-}
-
-
-// Меняем курсор в зависимости от того какую сторону тянем
-function changeCursorByResizeCorner(corner:SelectedCorner) {
-    console.log(corner)
-    if(corner === "LEFT_BOTTOM" || corner === "RIGHT_TOP") {
-      document.body.style.cursor = "ne-resize"
-      return
-    }
-    if(corner === "LEFT_TOP" || corner === "RIGHT_BOTTOM") {
-       document.body.style.cursor = "nw-resize"
-       return
-    }
-    document.body.style.cursor = "default"
-}
-
-
-
-// Детектит наведение на кружки по углам при выделении фигуры
-type SelectedCorner = "LEFT_TOP" | "RIGHT_TOP" | "LEFT_BOTTOM" | "RIGHT_BOTTOM" | ""
-
-function isCursorOnPoint(cursorX: number, cursorY: number, rect: SelectRect): SelectedCorner{
-  const maxArea = 15
-
-  const isUpperSide = rect.y - cursorY > 0 && rect.y - cursorY < maxArea
-  const isBottomPoint = cursorY - rect.y2 > 0 && cursorY - rect.y2 < maxArea
-
-  const isLeftSide = rect.x - cursorX > 0 && rect.x - cursorX < maxArea
-  const isRightSide = cursorX - rect.x2 > 0 && cursorX - rect.x2 < maxArea
-  
-
-  let type = ""
-
-  if(isLeftSide && isBottomPoint) type = "LEFT_BOTTOM"
-  if(isLeftSide && isUpperSide)  type = "LEFT_TOP"
-  if(isRightSide && isBottomPoint) type = "RIGHT_BOTTOM"
-  if(isRightSide && isUpperSide) type = "RIGHT_TOP"
-
-  return type as SelectedCorner
-}
-

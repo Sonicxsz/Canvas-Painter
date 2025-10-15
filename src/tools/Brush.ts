@@ -1,6 +1,6 @@
 import simplify from "simplify-js";
 import { BaseTool, Tool } from "./Core/Tool";
-import type { DrawableItem, CanvasStyles, Point } from "./Core.t";
+import type { DrawableItem, CanvasStyles, Point } from "./Core/Core.t";
 
 
 

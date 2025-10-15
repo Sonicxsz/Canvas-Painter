@@ -1,9 +1,9 @@
 import { getMousePosition } from "../../lib/utils"
-import type { DrawableItem, CanvasStyles } from "../Core.t"
+import type { DrawableItem, CanvasStyles, Point } from "./Core.t"
 
 interface Actions {
     addItem: (item:DrawableItem) => void
-    select:(x:number, y:number, x2:number, y2:number) => DrawableItem | null
+    select:(start: Point, end: Point) => void
     clearEditCanvas:() => void
 }
 
@@ -47,7 +47,7 @@ export class Tool {
     }
 
     select(x:number, y:number, x2:number, y2:number){
-        return this.actions.select(x,y, x2, y2)
+        return this.actions.select({x,y}, {x:x2, y:y2})
     }
 
     setStyles(styles: Partial<CanvasStyles>) {
