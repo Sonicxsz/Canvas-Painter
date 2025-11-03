@@ -10,12 +10,16 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@maxgraph/core": "^0.21.0",
+    "@tailwindcss/vite": "^4.1.14",
     "axios": "^1.12.1",
+    "postcss": "^8.5.6",
     "react": "^19.1.1",
     "react-colorful": "^5.6.1",
     "react-dom": "^19.1.1",
     "react-router-dom": "^7.9.0",
     "simplify-js": "^1.2.4",
+    "tailwindcss": "^4.1.14",
     "vite-plugin-svgr": "^4.5.0",
     "zustand": "^5.0.8"
   },

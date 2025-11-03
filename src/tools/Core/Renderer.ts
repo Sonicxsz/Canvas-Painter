@@ -52,7 +52,7 @@ export class Renderer {
   renderEditLayer = (items: Map<string, DrawableItem>, selectionRect: Rect | null) => {
     this.clear(this.editCanvas);
     if(!items.size || !selectionRect)  return;
-
+    
     items.forEach(item => {
       this.applyStyles(this.editCanvas, item.styles);
       item.draw(this.editCanvas.ctx);
